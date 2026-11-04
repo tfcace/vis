@@ -1,0 +1,124 @@
+{
+ "api": 1,
+ "build": "a1b2c3d",
+ "freeze": {
+  "frozen": false
+ },
+ "history": [],
+ "knobs": [],
+ "now": "2026-11-02T13:36:11Z",
+ "pressures": [],
+ "routes": [
+  {
+   "route": "GET /items/{id}",
+   "now": {
+    "route": "GET /items/{id}",
+    "requests": 238,
+    "errors": 0,
+    "p50_ms": 35.651,
+    "p95_ms": 48.234,
+    "p99_ms": 48.234
+   },
+   "history": [
+    {
+     "start": "2026-11-02T13:35:40Z",
+     "requests": 68,
+     "errors": 0,
+     "p50_ms": 35.651,
+     "p95_ms": 48.234,
+     "p99_ms": 48.234
+    },
+    {
+     "start": "2026-11-02T13:35:50Z",
+     "requests": 85,
+     "errors": 0,
+     "p50_ms": 35.651,
+     "p95_ms": 48.234,
+     "p99_ms": 48.234
+    },
+    {
+     "start": "2026-11-02T13:36:00Z",
+     "requests": 78,
+     "errors": 0,
+     "p50_ms": 35.651,
+     "p95_ms": 48.234,
+     "p99_ms": 48.234
+    },
+    {
+     "start": "2026-11-02T13:36:10Z",
+     "requests": 7,
+     "errors": 0,
+     "p50_ms": 35.651,
+     "p95_ms": 44.04,
+     "p99_ms": 44.04
+    }
+   ]
+  },
+  {
+   "route": "POST /orders",
+   "now": {
+    "route": "POST /orders",
+    "requests": 76,
+    "errors": 0,
+    "p50_ms": 104.857,
+    "p95_ms": 142.606,
+    "p99_ms": 142.606
+   },
+   "history": [
+    {
+     "start": "2026-11-02T13:35:40Z",
+     "requests": 14,
+     "errors": 0,
+     "p50_ms": 113.246,
+     "p95_ms": 142.606,
+     "p99_ms": 142.606
+    },
+    {
+     "start": "2026-11-02T13:35:50Z",
+     "requests": 29,
+     "errors": 0,
+     "p50_ms": 79.691,
+     "p95_ms": 121.634,
+     "p99_ms": 121.634
+    },
+    {
+     "start": "2026-11-02T13:36:00Z",
+     "requests": 29,
+     "errors": 0,
+     "p50_ms": 121.634,
+     "p95_ms": 142.606,
+     "p99_ms": 142.606
+    },
+    {
+     "start": "2026-11-02T13:36:10Z",
+     "requests": 4,
+     "errors": 0,
+     "p50_ms": 113.246,
+     "p95_ms": 113.246,
+     "p99_ms": 113.246
+    }
+   ]
+  }
+ ],
+ "rules": [],
+ "runtime": {
+  "over": "10.319s",
+  "sched_p50_ms": 0.002,
+  "sched_p99_ms": 0.018,
+  "gc_cpu": 3.3370183630957704e-06,
+  "heap_ratio": 0,
+  "goroutines": 34,
+  "gomaxprocs": 15,
+  "cpu_limit": 0,
+  "cpu_used": 0,
+  "throttled": 0,
+  "throttled_time": "0s"
+ },
+ "service": "shop",
+ "signals": [],
+ "slo": null,
+ "slos": [],
+ "stories": [],
+ "user": "human:sam",
+ "warnings": []
+}

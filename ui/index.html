@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+<title>cacheproxy · vis</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f7f7f6;
+  --ink: #111112;
+  --ink-2: #4a4a4f;
+  --ink-3: #8a8a90;
+  --ink-4: #c4c4c8;
+  --rule: #b9b9be;
+  --hair: #e4e4e1;
+  --red: #d93036;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Geist Mono", Menlo, monospace;
+  --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a; --ink: #ececec; --ink-2: #b0b0b5; --ink-3: #75757b; --ink-4: #3b3b40; --rule: #45454a; --hair: #1d1d20;
+    --red: #ff5a5f;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { overscroll-behavior: none; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; min-height: 100dvh; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+/* keyboard hints: shown only once someone is using the keyboard */
+.kbd { display: none; font: 11px/1 var(--mono); padding: 3px 5px; border: 1px solid currentColor; opacity: .55; margin-left: 8px; letter-spacing: 0; }
+body.keys-on .kbd { display: inline-block; }
+.label .k { display: none; } body.keys-on .label .k { display: inline; color: var(--ink-2); }
+.keys-hint { display: none; } @media (pointer: fine) { .keys-hint { display: inline; } }
+.strip:focus-visible { outline: 1px dotted var(--ink-2); outline-offset: 6px; }
+.keys { display: grid; gap: 18px; margin-top: 16px; }
+.keys h4 { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin: 0 0 6px; font-weight: 400; }
+.keys dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 14px; }
+.keys dt { font: 12.5px var(--mono); } .keys dt span { border: 1px solid var(--rule); padding: 1px 6px; margin-right: 4px; }
+.keys dd { margin: 0; color: var(--ink-2); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- page frame (borrowed from mdxcn: dotted rules, + at the joints) ---------- */
+.page { width: min(1120px, 100%); margin: 0 auto; border-left: 1px dotted var(--rule); border-right: 1px dotted var(--rule); min-height: 100dvh; position: relative; }
+header {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px;
+  padding: calc(14px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 14px max(24px, env(safe-area-inset-left));
+  background: var(--bg); border-bottom: 1px dotted var(--rule);
+}
+header::before, header::after { content: "+"; position: absolute; bottom: -9px; font: 12px/1 var(--mono); color: var(--ink-3); background: var(--bg); }
+header::before { left: -4px; } header::after { right: -4px; }
+.svc { font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+.svc .mark { width: 14px; height: 14px; display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 1px; }
+.svc .mark i { background: var(--ink); } .svc .mark i:nth-child(1) { height: 5px; } .svc .mark i:nth-child(2) { height: 9px; } .svc .mark i:nth-child(3) { height: 14px; }
+.svc small { font: 12px var(--mono); color: var(--ink-3); }
+.grow { flex: 1; }
+.freeze { min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; transition: background .2s, color .2s, border-color .2s; }
+.freeze:hover { border-color: var(--ink-2); color: var(--ink); }
+.freeze .sq { width: 8px; height: 8px; border: 1px solid currentColor; }
+body.frozen .freeze { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+body.frozen .freeze .sq { background: currentColor; }
+.freezebar { display: none; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 28px; background: var(--ink); color: var(--bg); font: 13px var(--mono); }
+body.frozen .freezebar { display: flex; }
+.freezebar b { font-weight: 600; letter-spacing: .06em; }
+.freezebar input { flex: 1; min-width: 180px; background: transparent; border: 0; border-bottom: 1px dotted currentColor; color: inherit; font: inherit; padding: 4px 0; outline: none; }
+.freezebar input::placeholder { color: inherit; opacity: .6; }
+.freezebar button { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 600px) { .freezebar { padding: 10px 16px; } }
+
+/* ---------- layout ---------- */
+main { padding: 8px max(24px, env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); }
+@media (min-width: 980px) {
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-items: start; }
+  aside { position: sticky; top: 92px; }
+}
+
+/* ---------- frames ---------- */
+.frame { position: relative; border: 1px dotted var(--rule); margin-top: 36px; }
+.frame > .c { position: absolute; font: 12px/1 var(--mono); color: var(--ink-3); pointer-events: none; }
+.frame > .c.tl { top: -7px; left: -4px; } .frame > .c.tr { top: -7px; right: -4px; } .frame > .c.bl { bottom: -6px; left: -4px; } .frame > .c.br { bottom: -6px; right: -4px; }
+.frame > .label { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--bg); padding: 0 8px; font: 12px/18px var(--mono); letter-spacing: .06em; color: var(--ink-2); white-space: nowrap; }
+.frame > .inner { padding: 22px 20px 18px; }
+
+/* ---------- hero ---------- */
+.hero { padding-top: 36px; }
+#headline { font: 600 clamp(34px, 7vw, 54px)/1.04 var(--display); letter-spacing: -0.04em; margin: 0; }
+#headline.alert { color: var(--red); }
+#headline.two { font-size: clamp(28px, 5.6vw, 44px); }
+#subline { font: 14.5px/1.5 var(--mono); color: var(--ink-2); margin: 12px 0 0; min-height: 22px; }
+
+/* ---------- tick strip ---------- */
+.strip { position: relative; height: 96px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: crosshair; }
+.strip svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.strip .tick { stroke: var(--ink-4); stroke-width: 1; shape-rendering: crispEdges; }
+.strip .tick.hot { stroke: var(--red); }
+.strip .tick.ev { stroke: var(--ink); }
+.strip .tick.dep { stroke-dasharray: 2 2; }
+.strip .lbl.dep { font: 11.5px var(--mono); font-style: normal; }
+.strip .tick.ev.hot { stroke: var(--red); } /* a landmark inside a breach stays red */
+.strip .tick, .strip .lbl { transition: opacity .15s; }
+.strip .band { fill: var(--ink); opacity: 0; transition: opacity .15s; }
+.strip.hl .band { opacity: .07; }
+.strip.hl .tick:not(.in), .strip.hl .lbl:not(.in) { opacity: .25; }
+.strip .slo { stroke: var(--red); stroke-width: 1; stroke-dasharray: 1 3; opacity: .7; }
+.strip .lbl { font: italic 12.5px var(--serif); fill: var(--ink-2); }
+.strip .now { stroke: var(--ink); stroke-width: 1.5; }
+.strip .hair { stroke: var(--ink); stroke-width: 1; opacity: 0; }
+.strip .readout { position: absolute; top: calc(100% + 6px); font: 12px var(--mono); color: var(--ink); background: var(--bg); padding: 0 4px; white-space: nowrap; transform: translateX(-50%); opacity: 0; transition: opacity .15s; pointer-events: none; }
+.strip.scrub .readout { opacity: 1; }
+.strip.scrub + .axis { opacity: 0; }
+.axis { display: flex; justify-content: space-between; font: 11.5px var(--mono); color: var(--ink-3); margin-top: 10px; }
+
+/* ---------- stories ---------- */
+.stories { display: grid; }
+.story { padding: 16px 0; transition: opacity .15s; }
+.stories.hl .story:not(.on) { opacity: .4 !important; } /* beats the entry animation's inline opacity */
+.story.on .when .dot { background: var(--ink); }
+.story.alert.on .when .dot { background: var(--red); outline: 1px solid var(--red); outline-offset: 2px; }
+.story:focus-visible { outline: 1px dotted var(--ink-2); outline-offset: 4px; }
+.story + .story { border-top: 1px dotted var(--rule); }
+.story:first-child { padding-top: 2px; } .story:last-child { padding-bottom: 0; }
+.story .when { font: 12px var(--mono); color: var(--ink-3); display: flex; gap: 8px; align-items: center; }
+.story .when .dot { width: 6px; height: 6px; background: var(--ink-4); }
+.story.alert .when .dot { background: var(--red); }
+.story h3 { font: 600 16.5px/1.35 var(--sans); margin: 6px 0 4px; letter-spacing: -0.01em; }
+.story p { margin: 0; color: var(--ink-2); }
+.story .actions { display: flex; gap: 8px; margin-top: 14px; }
+.btn { min-height: 38px; padding: 0 14px; border: 1px solid var(--ink); font-weight: 500; font-size: 14px; transition: transform .16s var(--ease-out), background .2s, color .2s; }
+.btn.ink { background: var(--ink); color: var(--bg); }
+.btn.quiet { border-color: transparent; color: var(--ink-2); padding: 0 8px; }
+@media (hover: hover) and (pointer: fine) { .btn:not(.ink):not(:disabled):hover { background: var(--hair); } }
+.btn:disabled { opacity: .35; cursor: default; }
+.pressed { transform: scale(.97); }
+.empty { color: var(--ink-3); font-size: 14px; }
+
+/* ---------- knobs list ---------- */
+.list { display: block; }
+.row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 13px 20px; min-height: 58px; transition: background .15s; }
+.row + .row { border-top: 1px dotted var(--rule); }
+@media (hover: hover) and (pointer: fine) { .row:hover { background: var(--hair); } }
+.row.pressed { transform: none; background: var(--hair); }
+.row .name { font-weight: 550; }
+.row .meta { font: 11.5px var(--mono); color: var(--ink-3); }
+.row .meta.live { color: var(--ink-2); }
+.row .val { margin-left: auto; font: 400 18px/1 var(--mono); letter-spacing: -0.02em; }
+.row .val small { font: 11.5px var(--mono); color: var(--ink-3); margin-left: 4px; letter-spacing: 0; }
+.row .chev { color: var(--ink-3); font: 13px var(--mono); margin-left: 2px; }
+.fleet { display: flex; align-items: center; gap: 14px; }
+.dots { display: flex; gap: 5px; }
+.dots i { width: 9px; height: 9px; border: 1px solid var(--ink-3); transition: background .3s, border-color .3s; }
+.dots i.hot { background: var(--red); border-color: var(--red); }
+.demo { margin-top: 28px; font: 12px var(--mono); color: var(--ink-3); }
+.demo button { text-decoration: underline; text-underline-offset: 3px; color: var(--ink-2); }
+
+/* ---------- sheet ---------- */
+.scrim { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, var(--bg) 70%, transparent); opacity: 0; pointer-events: none; transition: opacity .3s var(--ease-out); }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; margin: 0 auto; width: min(480px, 100%);
+  background: var(--bg); border: 1px solid var(--rule); border-bottom: 0; border-radius: 12px 12px 0 0;
+  padding: 6px 24px calc(22px + env(safe-area-inset-bottom)); max-height: 92dvh; overflow: auto; overscroll-behavior: contain;
+  transform: translateY(110%);
+}
+@media (min-width: 700px) { .sheet { bottom: auto; top: 50%; border-radius: 0; border-bottom: 1px solid var(--rule); padding-bottom: 24px; transform: translateY(-50%) scale(.98); opacity: 0; pointer-events: none; } .sheet.on { pointer-events: auto; } }
+.grab { height: 20px; display: grid; place-items: center; touch-action: none; cursor: grab; }
+.grab::before { content: ""; width: 32px; height: 4px; background: var(--ink-4); }
+@media (min-width: 700px) { .grab { display: none; } }
+.sheet h3 { font: 600 20px/1.2 var(--sans); margin: 10px 0 2px; letter-spacing: -0.015em; }
+.sheet .desc { color: var(--ink-3); font-size: 14px; }
+
+/* encoder */
+.encoder { position: relative; width: 256px; height: 256px; margin: 10px auto 0; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+.encoder.turning { cursor: grabbing; }
+.encoder svg { width: 100%; height: 100%; overflow: visible; }
+.encoder .t { stroke: var(--ink-4); stroke-width: 1.5; }
+.encoder .t.on { stroke: var(--ink); }
+.encoder .t.def { stroke: var(--ink-2); }
+.encoder .cap { fill: none; stroke: var(--rule); stroke-width: 1; stroke-dasharray: 1 3; }
+.encoder .needle { stroke: var(--ink); stroke-width: 2; }
+.encoder .optl { font: 12px var(--mono); fill: var(--ink-3); }
+.encoder .optl.on { fill: var(--ink); }
+.encoder .readout { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; text-align: center; }
+.encoder .big { font: 400 46px/1 var(--mono); letter-spacing: -0.04em; }
+.encoder .unit { font: 12px var(--mono); color: var(--ink-3); margin-top: 6px; }
+.encoder .was { font: 12px var(--mono); color: var(--ink-3); height: 18px; margin-top: 2px; }
+.who { text-align: center; color: var(--ink-2); font-size: 14px; margin: 2px 0 18px; min-height: 21px; }
+.history { border-top: 1px dotted var(--rule); padding-top: 14px; }
+.history .h { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin-bottom: 8px; }
+.history ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.history li { display: flex; gap: 12px; }
+.history li span:first-child { color: var(--ink-3); min-width: 72px; font: 12.5px/21px var(--mono); }
+.history li b { font-weight: 550; }
+.why { border: 1px dotted var(--rule); padding: 12px 14px; font-size: 14px; color: var(--ink-2); margin: 14px 0 4px; }
+.choose { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; margin: 18px 0; font: 12px var(--mono); color: var(--ink-3); }
+.seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--rule); }
+.seg button { position: relative; z-index: 1; min-height: 34px; font-size: 13.5px; color: var(--ink-2); transition: color .2s; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button.on { color: var(--bg); }
+.seg .ind { position: absolute; top: -1px; bottom: -1px; left: 0; background: var(--ink); transition: transform .3s var(--ease-out), width .3s var(--ease-out); }
+.apply { width: 100%; min-height: 48px; font-size: 15px; }
+body.keys-on .apply[data-kbd]:not(:disabled)::after { content: attr(data-kbd); font: 11px/1 var(--mono); padding: 3px 5px; border: 1px solid currentColor; opacity: .55; margin-left: 10px; }
+.plan { border: 1px dotted var(--rule); padding: 10px 12px; margin: 0 0 12px; font-size: 14px; color: var(--ink-2); }
+.plan .h { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin-bottom: 4px; }
+.plan b { color: var(--ink); font-weight: 550; }
+.plan.blocked { border-color: var(--red); }
+.plan:empty { display: none; }
+.cmd { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding-top: 8px; border-top: 1px dotted var(--rule); }
+.cmd code { flex: 1; font: 12px/1.5 var(--mono); color: var(--ink-2); word-break: break-word; }
+.copy { font: 12px var(--mono); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.copy:hover { color: var(--ink); }
+.story .when .copy { margin-left: auto; text-decoration: none; }
+.copyall { justify-self: start; margin-top: 14px; }
+.toast { position: fixed; z-index: 60; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translate(-50%, 200%); opacity: 0; background: var(--ink); color: var(--bg); padding: 11px 16px; font-size: 14px; max-width: calc(100% - 32px); white-space: nowrap; }
+.toast button { color: inherit; text-decoration: underline; text-underline-offset: 3px; margin-left: 12px; }
+.inst { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px dotted var(--rule); font-size: 14px; }
+.inst:first-of-type { border-top: 0; }
+.inst b { font: 500 13px var(--mono); }
+.bar { height: 4px; background: var(--hair); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ink-2); }
+.bar i.hot { background: var(--red); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (max-width: 600px) { .frame > .inner { padding: 20px 16px 16px; } .row { padding: 12px 16px; } main { padding-left: 16px; padding-right: 16px; } header { padding-left: 16px; padding-right: 16px; } }
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <div class="svc"><span class="mark"><i></i><i></i><i></i></span>cacheproxy<small>vis</small></div>
+  <div class="grow"></div>
+  <button class="freeze" id="freezeBtn" aria-pressed="false" aria-keyshortcuts="f Shift+F" title="Stop rules, agents and rollouts from changing knobs. Every knob holds its value."><span class="sq"></span><span id="freezeLbl">Freeze</span><span class="kbd" id="freezeKbd">F</span></button>
+</header>
+<div class="freezebar" id="freezeBar" role="status">
+  <b>[ FROZEN ]</b><span id="freezeWho"></span>
+  <input id="freezeWhy" placeholder="why? (optional, shown to everyone)" aria-label="Reason for the freeze">
+  <button id="unfreezeBtn">Unfreeze</button>
+</div>
+
+<main>
+  <div>
+    <section class="hero">
+      <h1 id="headline">All good.</h1>
+      <p id="subline"></p>
+      <div class="frame"><span class="label">[ P99 · LAST HOUR<span class="k"> · t</span> ]</span><div class="inner">
+        <div class="strip" id="strip" tabindex="0" role="slider" aria-keyshortcuts="t" aria-label="p99 latency over the last hour. Arrow keys move through time, brackets jump between events, Enter opens the matching story.">
+          <svg id="stripSvg"></svg>
+          <div class="readout" id="readout"></div>
+        </div>
+        <div class="axis" id="axis"><span>-60m</span><span>-30m</span><span>now</span></div>
+      </div></div>
+    </section>
+
+    <div class="frame"><span class="label">[ TODAY<span class="k"> · j k</span> ]</span><div class="inner"><div class="stories" id="stories" role="list" aria-label="Today" aria-keyshortcuts="j k"></div></div></div>
+  </div>
+
+  <aside>
+    <div class="frame"><span class="label">[ KNOBS<span class="k"> · 1–5</span> ]</span><div class="list" id="knobList" style="padding:10px 0 4px"></div></div>
+
+    <div class="frame"><span class="label">[ INSTANCES<span class="k"> · i</span> ]</span><div style="padding:8px 0 2px"><button class="row fleet" id="fleetBtn" aria-keyshortcuts="i">
+      <span class="dots" id="dots"></span>
+      <span class="meta live" id="fleetTxt">all 7 healthy</span>
+      <span class="chev" style="margin-left:auto">→</span>
+    </button></div></div>
+
+    <div class="demo">demo data · simulate <button id="spikeBtn">a traffic spike</button> · <button id="leakBtn">a memory leak</button><span class="keys-hint"> · <button id="keysBtn">press ? for keys</button></span></div>
+  </aside>
+</main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="grab" id="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+/* ---------------- motion ---------------- */
+let M = null;
+try { M = await import("https://cdn.jsdelivr.net/npm/motion@14.9.0/+esm"); } catch {}
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Emil's rules: entering/exiting -> ease-out; moving on screen -> spring; constant -> linear
+function spring(el, kf, o = {}) {
+  const end = () => { for (const [k, v] of Object.entries(kf)) el.style[k] = Array.isArray(v) ? v[v.length - 1] : v; };
+  if (REDUCED) return end();
+  if (M) return M.animate(el, kf, { type: M.spring, bounce: o.bounce ?? 0.18, visualDuration: o.d ?? 0.4, delay: o.delay ?? 0 });
+  const a = el.animate(kf, { duration: (o.d ?? .4) * 1000, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" }); a.onfinish = end; return a;
+}
+function tween(ms, fn, ease = t => 1 - Math.pow(1 - t, 3)) {
+  return new Promise(res => {
+    if (REDUCED) { fn(1); return res(); }
+    const t0 = performance.now();
+    const step = now => { const t = Math.min(1, (now - t0) / ms); fn(ease(t)); t < 1 ? requestAnimationFrame(step) : res(); };
+    requestAnimationFrame(step);
+  });
+}
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const fmt = v => typeof v === "number" ? Math.round(v).toLocaleString() : v;
+// feedback on pointer-down, not on release
+document.addEventListener("pointerdown", e => {
+  const b = e.target.closest(".btn, .row"); if (!b) return;
+  b.classList.add("pressed");
+  const up = () => { b.classList.remove("pressed"); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); };
+  addEventListener("pointerup", up); addEventListener("pointercancel", up);
+});
+
+/* ---------------- clock: 1 real second = one 10 s bucket ---------------- */
+const SPEED = 10, T0 = performance.now();
+const now = () => (performance.now() - T0) / 1000 * SPEED;
+const BASE = new Date(); BASE.setHours(14, 20, 0, 0);
+const clock = s => new Date(BASE.getTime() + s * 1000).toTimeString().slice(0, 5);
+const left = s => { s = Math.max(1, Math.round(s / 60)); return s < 60 ? `${s} min` : `${Math.floor(s / 60)} h ${s % 60} min`; };
+
+/* ---------------- state ---------------- */
+const S = { frozen: false, spike: 0, spikeUntil: 0, sched: 2, condSince: null, cooldown: -1, series: [], stories: [], suggested: false, events: [] };
+const LAYERS = ["default", "fleet", "agent", "rule", "pin"]; // RFC: default < fleet < agent < rule < human pin
+const knob = (name, o) => ({ name, ...o, layers: { default: { v: o.def } } });
+const K = {
+  CacheSize: knob("CacheSize", { kind: "num", min: 100, max: 10000, def: 1000, step: 50, log: true, unit: "MiB", about: "Affects hit rate and heap." }),
+  BatchSize: knob("BatchSize", { kind: "num", min: 1, max: 512, def: 64, step: 1, log: true, unit: "items", about: "Affects scheduler latency. A rule lowers it under load." }),
+  SchedTarget: knob("SchedTarget", { kind: "num", min: 1, max: 50, def: 5, step: 1, unit: "ms", about: "The rule's threshold for BatchSize." }),
+  Evictor: knob("Evictor", { kind: "opt", options: ["lru", "tinylfu"], def: "lru", about: "Cache eviction strategy. Both are compiled in." }),
+  LogLevel: knob("LogLevel", { kind: "opt", options: ["debug", "info", "warn", "error"], def: "info", about: "Debug costs about 3% CPU." }),
+};
+K.Evictor.layers.fleet = { v: "tinylfu", until: 3 * 3600 };
+const HISTORY = {
+  CacheSize: [["Oct 28", "800 → 1,000", "p99 −4.1 ms"], ["Oct 12", "1,400 → 800", "p99 +6.3 ms"], ["Sep 30", "1,000 → 1,400", "p99 −5.2 ms"]],
+  BatchSize: [["Today", "a rule lowered it 4 times", "p99 recovered within a minute each time"], ["Oct 21", "64 → 96", "p99 +3.0 ms, reverted"]],
+  SchedTarget: [["Sep 02", "unchanged since deploy", ""]],
+  Evictor: [["31 min ago", "lru → tinylfu, fleet rollout", "p99 −6.1 ms vs the rest"]],
+  LogLevel: [["Oct 20", "info → debug for 1 h", "CPU +3.2%"]],
+};
+const lapsed = [];
+// A freeze HOLDS: every knob keeps its current value and lease clocks stop.
+// (Masking automated layers would undo rollouts and mitigations: a second incident.)
+const leaseNow = () => S.frozen ? S.frozenAt : now();
+function eff(k) {
+  const t = leaseNow();
+  for (let i = LAYERS.length - 1; i >= 0; i--) {
+    const L = LAYERS[i], e = k.layers[L];
+    if (!e) continue;
+    if (e.until != null && e.until <= t) { delete k.layers[L]; lapsed.push([k, L]); continue; }
+    return { L, ...e };
+  }
+}
+const leftOf = e => S.frozen ? "held" : `${left(e.until - now())} left`;
+function below(k, L) { const save = k.layers[L]; delete k.layers[L]; const b = eff(k); k.layers[L] = save; return b; }
+function whoSays(k) {
+  const e = eff(k);
+  if (e.L === "default") return "Default. Nothing is overriding it.";
+  const b = below(k, e.L);
+  if (e.L === "pin" && e.until == null) return "Pinned by you. Stays until you remove the pin.";
+  if (S.frozen && e.until != null) return `Held at this value while changes are frozen, then back to ${fmt(b.v)} when its lease ends.`;
+  if (e.L === "pin") return `Pinned by you for ${left(e.until - now())} more, then back to ${fmt(b.v)}.`;
+  if (e.L === "agent") return `An approved suggestion. ${left(e.until - now())} left, then back to ${fmt(b.v)}.`;
+  if (e.L === "rule") return `A rule set this. ${left(e.until - now())} left, then back to ${fmt(b.v)}.`;
+  if (e.L === "fleet") return "Rolled out to the whole fleet.";
+}
+
+/* ---------------- latency model ---------------- */
+function point() {
+  const cache = eff(K.CacheSize).v, batch = eff(K.BatchSize).v, ev = eff(K.Evictor).v;
+  const miss = clamp(1 - Math.log10(cache) / 4.1, .05, .9);
+  const p50 = 3 + miss * 9 + S.spike * 7 + rnd(-.4, .4);
+  const p95 = p50 * 2.3 + miss * 10 + S.spike * 22 + rnd(-1, 1);
+  return p95 * 1.35 + (ev === "lru" ? 4 : 0) + Math.max(0, batch - 48) / 16 * 1.6 + S.spike * 38 + rnd(-1.5, 1.5);
+}
+for (let i = 0; i < 360; i++) { S.spike = i > 118 && i < 136 ? .55 : 0; let p = point(); if (i < 173) p += 6; S.series.push(p); }
+S.spike = 0;
+const DEPLOY_I = 47, DEPLOY_T = -(359 - DEPLOY_I) * 10;
+S.events = [{ i: DEPLOY_I, label: "deploy 9f3c2e1", kind: "deploy" }, { i: 125, label: "spike" }, { i: 173, label: "tinylfu rolled out" }];
+
+/* ---------------- headline ---------------- */
+let lastHead = "";
+// Every current problem, worst first. The headline names up to two; more become a count.
+function problems() {
+  const p99 = S.series[359], hot = hotInstances(), out = [];
+  if (p99 > 50) out.push({ sev: 3, alert: true, h: "Latency is over the SLO." });
+  else if (hot.length) out.push({ sev: 1, h: `${hot.join(" and ")} ${hot.length > 1 ? "are" : "is"} running warm.` });
+  lowMem().forEach(i => out.push({ sev: 2, alert: true, h: `${i.id} is low on memory.`, sub: `${i.id} memory ${i.mem.toFixed(0)}% and climbing` }));
+  return out.sort((a, b) => b.sev - a.sev);
+}
+function headline() {
+  const p99 = S.series[359], hot = hotInstances(), ps = problems();
+  const rule = K.BatchSize.layers.rule;
+  const doing = S.frozen ? "changes frozen, values held" : ps.length && rule && eff(K.BatchSize).L === "rule" && now() - (rule.until - 600) < 300 ? `a rule lowered BatchSize to ${rule.v}` : "";
+  const h = !ps.length ? "All good." : ps.length <= 2 ? ps.map(x => x.h).join(" ") : `${ps.length} things need attention.`;
+  const parts = [p99 > 50 ? `p99 ${p99.toFixed(0)} ms${hot.length ? ` on ${hot.join(", ")}` : ""}` : `p99 ${p99.toFixed(0)} ms · ${50 - p99 < 1 ? "right at the SLO" : `${Math.round(50 - p99)} ms under the SLO`}`];
+  INST.forEach(i => i.restartedAt != null && now() - i.restartedAt < 300 && parts.push(`${i.id} restarted after running out of memory`));
+  ps.forEach(x => x.sub && parts.push(x.sub));
+  if (doing) parts.push(doing);
+  const el = $("#headline");
+  if (h !== lastHead) { lastHead = h; el.textContent = h; spring(el, { opacity: [0, 1], transform: ["translateY(6px)", "translateY(0px)"] }, { d: .35 }); }
+  el.classList.toggle("alert", ps.some(x => x.alert));
+  el.classList.toggle("two", ps.length === 2);
+  $("#subline").textContent = parts.join(" · ");
+}
+
+/* ---------------- tick strip ---------------- */
+const svgNS = "http://www.w3.org/2000/svg";
+const mk = (tag, a = {}, p) => { const e = document.createElementNS(svgNS, tag); for (const k in a) e.setAttribute(k, a[k]); p && p.appendChild(e); return e; };
+const strip = $("#stripSvg");
+let W = 600, ticks = [], lblG, hair, band, B = 360;
+const H = 96, TOP = 26;
+const yOf = v => H - 4 - (Math.min(v, 100) / 100) * (H - TOP - 6);
+// keep the tick character at any width: at most one tick per 3 px, each showing the worst p99 in its slice
+const binOf = i => Math.min(B - 1, Math.floor(i * B / 360));
+const x = b => Math.round((b / (B - 1)) * (W - 1)) + .5;
+function binVals() { const out = new Array(B).fill(0); S.series.forEach((v, i) => { const b = binOf(i); out[b] = Math.max(out[b], v); }); return out; }
+function buildStrip() {
+  W = strip.clientWidth || 600; B = Math.max(60, Math.min(360, Math.floor(W / 3)));
+  strip.setAttribute("viewBox", `0 0 ${W} ${H}`); strip.innerHTML = "";
+  mk("line", { class: "slo", x1: 0, x2: W, y1: yOf(50), y2: yOf(50) }, strip);
+  band = mk("rect", { class: "band", y: TOP - 6, height: H - TOP + 6 }, strip);
+  ticks = Array.from({ length: B }, (_, b) => mk("line", { class: "tick", x1: x(b), x2: x(b), y2: H - 4 }, strip));
+  lblG = mk("g", {}, strip);
+  mk("line", { class: "now", x1: W - .75, x2: W - .75, y1: TOP - 6, y2: H }, strip);
+  hair = mk("line", { class: "hair", y1: TOP - 6, y2: H }, strip);
+  drawStrip();
+}
+function drawStrip() {
+  if (!ticks.length) return;
+  const vals = binVals(), evBins = new Set(S.events.map(e => binOf(e.i))), depBins = new Set(S.events.filter(e => e.kind === "deploy").map(e => binOf(e.i)));
+  const w = S.hl && windowOf(S.hl);
+  vals.forEach((v, b) => {
+    const t = ticks[b], ev = evBins.has(b);
+    t.setAttribute("y1", ev ? TOP - 6 : yOf(v));
+    t.setAttribute("class", "tick" + (v > 50 ? " hot" : "") + (ev ? " ev" : "") + (depBins.has(b) ? " dep" : "") + (w && b >= w[0] && b <= w[1] ? " in" : ""));
+  });
+  stripBox.classList.toggle("hl", !!w);
+  if (w) { band.setAttribute("x", x(w[0]) - 3.5); band.setAttribute("width", x(w[1]) - x(w[0]) + 7); }
+  const ax = $("#axis").children; ax[0].textContent = clock(now() - 3600); ax[1].textContent = clock(now() - 1800);
+  lblG.innerHTML = "";
+  let edge = Infinity; // left edge of the nearest label already placed to the right
+  [...S.events].sort((a, b) => b.i - a.i).forEach(e => {
+    const xi = x(binOf(e.i));
+    const right = xi > W - 140;
+    const t = mk("text", { class: "lbl", x: right ? xi - 5 : xi + 5, y: TOP - 8, "text-anchor": right ? "end" : "start" }, lblG);
+    t.textContent = e.label;
+    if (e.kind === "deploy") t.classList.add("dep");
+    if (w && binOf(e.i) >= w[0] && binOf(e.i) <= w[1]) t.classList.add("in");
+    const bb = t.getBBox();
+    if (bb.x + bb.width > edge - 10) { t.remove(); return; } // newest label wins; measured, so no overlaps
+    edge = bb.x;
+  });
+}
+const stripBox = $("#strip");
+let scrubX = null, kbBin = null;
+function scrub(e) {
+  scrubX = e.clientX;
+  const r = strip.getBoundingClientRect();
+  scrubBin(clamp(Math.round((e.clientX - r.left) / r.width * (B - 1)), 0, B - 1));
+}
+function scrubBin(b) {
+  const r = strip.getBoundingClientRect();
+  hair.setAttribute("x1", x(b)); hair.setAttribute("x2", x(b)); hair.style.opacity = 1;
+  const i = Math.min(359, Math.floor((b + 1) * 360 / B) - 1);
+  const ro = $("#readout");
+  ro.textContent = `${clock(now() - (359 - i) * 10)} · p99 ${binVals()[b].toFixed(0)} ms`;
+  if (!S.hl) markStories(now() - (359 - i) * 10);
+  ro.style.left = `${clamp(x(b) * r.width / W, 70, r.width - 70)}px`;
+  stripBox.setAttribute("aria-valuetext", ro.textContent);
+  stripBox.classList.add("scrub");
+}
+const endScrub = () => { stripBox.classList.remove("scrub"); if (hair) hair.style.opacity = 0; if (!S.hl) markStories(); };
+stripBox.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const evBins = [...new Set(S.events.map(ev => binOf(ev.i)))].sort((a, b) => a - b);
+  const cur = kbBin ?? B - 1;
+  let b = null;
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") b = cur + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 10 : 1);
+  else if (e.key === "Home") b = 0; else if (e.key === "End") b = B - 1;
+  else if (e.key === "[") b = [...evBins].reverse().find(v => v < cur) ?? cur;
+  else if (e.key === "]") b = evBins.find(v => v > cur) ?? cur;
+  else if (e.key === "Enter") { const hit = $("#stories .story.on"); if (hit) { e.preventDefault(); hit.focus(); hit.scrollIntoView({ block: "nearest" }); } return; }
+  if (b == null) return;
+  e.preventDefault(); e.stopPropagation(); kbBin = clamp(b, 0, B - 1); scrubX = null; scrubBin(kbBin);
+});
+stripBox.addEventListener("focus", () => { if (stripBox.matches(":focus-visible")) { kbBin ??= B - 1; scrubBin(kbBin); } });
+stripBox.addEventListener("blur", () => { kbBin = null; endScrub(); });
+stripBox.addEventListener("pointermove", scrub);
+stripBox.addEventListener("pointerdown", scrub);
+stripBox.addEventListener("pointerleave", () => { scrubX = null; if (kbBin == null) endScrub(); else scrubBin(kbBin); });
+new ResizeObserver(buildStrip).observe(strip);
+
+/* ---------------- copy as text ---------------- */
+async function copyText(text, btn) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  const was = btn.textContent; btn.textContent = "copied"; setTimeout(() => btn.textContent = was, 1200);
+}
+const SVC = "cacheproxy";
+const plain = h => { const d = document.createElement("div"); d.innerHTML = h; return d.textContent; };
+function storyText(s) {
+  const [a, b] = spanOf(s), when = s.live ? `${clock(a)}–now` : b - a >= 60 ? `${clock(a)}–${clock(b)}` : clock(a);
+  return `${SVC} · ${when}${s.src ? ` · ${s.src}` : ""}\n${plain(s.title)}\n${plain(s.body)}`;
+}
+
+/* ---------------- stories ⇄ strip ---------------- */
+// A story covers [t0, t1] (game seconds); a point story covers its own moment. Live stories run to now.
+const spanOf = s => [s.t0 ?? s.t, s.live ? now() : (s.t1 ?? s.t)];
+const binAt = t => binOf(clamp(359 - Math.round((now() - t) / 10), 0, 359));
+function windowOf(s) {
+  const [a, b] = spanOf(s);
+  if (b < now() - 3600) return null; // older than the strip
+  let b0 = binAt(a), b1 = binAt(b);
+  if (b1 - b0 < 2) { b0 = Math.max(0, b0 - 1); b1 = Math.min(B - 1, b1 + 1); }
+  return [b0, b1];
+}
+function highlight(s) { S.hl = s; drawStrip(); markStories(); }
+// stories lit up: the one pointed at, or every story covering the scrubbed moment
+function markStories(at) {
+  const tol = 3600 / B;
+  const on = s => at != null ? (([a, b]) => at >= a - tol && at <= b + tol)(spanOf(s)) : s === S.hl;
+  let any = false;
+  $("#stories").querySelectorAll(".story").forEach(el => { const hit = on(el._s); el.classList.toggle("on", hit); any ||= hit; });
+  $("#stories").classList.toggle("hl", any);
+}
+
+/* ---------------- stories ---------------- */
+const storyEl = s => s && $("#stories").querySelector(`.story[data-sid="${s.id}"]`);
+function setActiveStory(s) {
+  activeStory = s;
+  $("#stories").querySelectorAll(".story").forEach(el => el.tabIndex = el._s === s ? 0 : -1);
+}
+function moveStory(d) {
+  const els = [...$("#stories").querySelectorAll(".story")]; if (!els.length) return;
+  const at = els.findIndex(el => el._s === activeStory && el.contains(document.activeElement));
+  const el = els[at < 0 ? 0 : clamp(at + d, 0, els.length - 1)];
+  el.focus(); el.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+function story(s) { s.id ??= Math.random().toString(36).slice(2); s.t ??= now(); S.stories.unshift(s); renderStories(s.id); return s; }
+function dropStory(s) { S.stories = S.stories.filter(x => x !== s); renderStories(); }
+let activeStory = null; // the story that owns the list's single Tab stop
+function renderStories(newId) {
+  const box = $("#stories"), hadFocus = box.contains(document.activeElement) && document.activeElement.closest(".story")?._s;
+  box.innerHTML = "";
+  if (!S.stories.length) { box.innerHTML = `<div class="empty">Nothing needed your attention.</div>`; return; }
+  if (S.hl && !S.stories.includes(S.hl)) highlight(null);
+  box.classList.toggle("hl", !!S.hl);
+  for (const s of S.stories.slice(0, 6)) {
+    const el = document.createElement("article");
+    el.className = "story" + (s.alert ? " alert" : "");
+    el.innerHTML = `<div class="when"><span class="dot"></span><span class="num">${clock(s.t)}</span>${s.src ? `<span>· ${s.src}</span>` : ""}<button class="copy" tabindex="-1" aria-label="Copy this story as text (c)">copy</button></div>
+      <h3>${s.title}</h3><p>${s.body}</p>${s.actions ? `<div class="actions">${s.actions.map((a, i) => `<button class="btn ${i ? "quiet" : "ink"}" data-a="${i}">${a.label}<span class="kbd">${i ? "x" : "↵"}</span></button>`).join("")}</div>` : ""}`;
+    s.actions?.forEach((a, i) => el.querySelector(`[data-a="${i}"]`).onclick = a.fn);
+    el.querySelector(".copy").onclick = e => copyText(storyText(s), e.currentTarget);
+    el._s = s; el.dataset.sid = s.id; el.setAttribute("role", "listitem");
+    el.onpointerdown = e => el._pt = e.pointerType;
+    el.onpointerenter = e => e.pointerType === "mouse" && highlight(s);
+    el.onpointerleave = e => e.pointerType === "mouse" && highlight(null);
+    el.onfocus = () => el.matches(":focus-visible") && highlight(s); // keyboard only; taps toggle below
+    el.onblur = () => S.hl === s && highlight(null);
+    el.onclick = e => { if (e.target.closest("button") || el._pt === "mouse") return; highlight(S.hl === s ? null : s); }; // touch: tap to toggle
+    box.appendChild(el);
+    el.addEventListener("focusin", () => setActiveStory(s));
+    if (s === S.hl) el.classList.add("on");
+    if (s.id === newId) spring(el, { opacity: [0, 1], transform: ["translateY(-8px)", "translateY(0px)"] }, { d: .45 });
+  }
+  if (!S.stories.slice(0, 6).includes(activeStory)) activeStory = S.stories[0];
+  setActiveStory(activeStory);
+  if (hadFocus) storyEl(S.stories.includes(hadFocus) ? hadFocus : activeStory)?.focus({ preventScroll: true }); // live updates never steal focus
+  const all = document.createElement("button"); all.className = "copy copyall"; all.textContent = "copy today as text, oldest first";
+  all.setAttribute("aria-keyshortcuts", "Shift+C");
+  all.onclick = () => copyText([...S.stories].reverse().map(storyText).join("\n\n"), all);
+  box.appendChild(all);
+}
+story({ t: DEPLOY_T, t0: DEPLOY_T, t1: DEPLOY_T + 240, src: "deploy", title: "9f3c2e1 is on 6 of 7 instances.",
+  body: "cp-7 failed its readiness check during the rollout and stayed on 7a1b0d4. p99 didn't move." });
+story({ t: -2400, t0: -2400, t1: -2240, alert: false, src: "cp-5, cp-6", title: "Latency spiked on cp-5 and cp-6, and recovered.",
+  body: `p99 peaked at ${Math.max(...S.series.slice(119, 136)).toFixed(0)} ms for about 3 min. Nothing changed; it passed on its own.` });
+story({ t: -1860, src: "fleet rollout", title: "tinylfu is now the eviction strategy everywhere.", body: "Rolled out to one instance, then 10%, then all. p99 fell 6.1 ms against the instances that hadn't switched yet." });
+
+/* ---------------- knobs list ---------------- */
+function metaOf(k) {
+  const e = eff(k);
+  if (e.L === "default") return "";
+  if (e.L === "pin") return e.until == null ? "pinned by you" : `pinned by you · ${leftOf(e)}`;
+  if (e.L === "agent") return `approved suggestion · ${leftOf(e)}`;
+  if (e.L === "rule") return `set by a rule · ${leftOf(e)}`;
+  if (e.L === "fleet") return S.frozen ? "fleet rollout · held" : "fleet rollout";
+}
+function renderKnobs() {
+  const list = $("#knobList"), had = document.activeElement?.closest?.("#knobList .row")?.dataset.k;
+  list.innerHTML = "";
+  for (const [n, k] of Object.values(K).entries()) {
+    const e = eff(k), meta = metaOf(k);
+    const b = document.createElement("button");
+    b.className = "row"; b.dataset.k = k.name;
+    b.innerHTML = `<span><span class="name">${k.name}</span><br><span class="meta ${meta ? "live" : ""}">${meta || "default"}</span></span>
+      <span class="val num">${fmt(e.v)}${k.unit ? `<small>${k.unit}</small>` : ""}</span><span class="kbd">${n + 1}</span><span class="chev">→</span>`;
+    b.setAttribute("aria-keyshortcuts", String(n + 1));
+    b.onclick = () => openKnob(k);
+    list.appendChild(b);
+  }
+  if (had) list.querySelector(`.row[data-k="${had}"]`)?.focus({ preventScroll: true }); // live updates never steal focus
+}
+function bumpKnob(name) { const r = document.querySelector(`.row[data-k="${name}"] .val`); if (r) spring(r, { transform: ["scale(1.14)", "scale(1)"] }, { bounce: .4, d: .45 }); }
+
+/* ---------------- sheet ---------------- */
+const sheet = $("#sheet"), scrim = $("#scrim");
+const desktop = () => matchMedia("(min-width: 700px)").matches;
+let returnTo = null;
+function openSheet(html) {
+  const a = document.activeElement, st = a?.closest?.(".story");
+  returnTo = a?.closest?.(".row")?.dataset.k ? `.row[data-k="${a.closest(".row").dataset.k}"]` : st ? `.story[data-sid="${st.dataset.sid}"]` : a?.id ? `#${a.id}` : null;
+  $("#sheetBody").innerHTML = html; scrim.classList.add("on"); sheet.classList.add("on"); sheet.scrollTop = 0;
+  $(".page").inert = true; // keep Tab inside the sheet
+  requestAnimationFrame(() => ($("#enc") || $("#sheetBody h3"))?.focus({ preventScroll: true }));
+  if (desktop()) spring(sheet, { opacity: [0, 1], transform: ["translateY(-50%) scale(0.96)", "translateY(-50%) scale(1)"] }, { d: .3, bounce: .1 });
+  else spring(sheet, { transform: ["translateY(100%)", "translateY(0%)"] }, { d: .42, bounce: .1 });
+}
+function closeSheet() {
+  if (!sheet.classList.contains("on")) return;
+  scrim.classList.remove("on"); sheet.classList.remove("on");
+  $(".page").inert = false;
+  if (returnTo) (document.querySelector(returnTo) || (returnTo.startsWith(".story") && storyEl(activeStory)))?.focus({ preventScroll: true }); // a dropped story hands focus to the list
+  if (desktop()) spring(sheet, { opacity: [1, 0], transform: ["translateY(-50%) scale(1)", "translateY(-50%) scale(0.97)"] }, { d: .2, bounce: 0 });
+  else spring(sheet, { transform: [sheet.style.transform || "translateY(0%)", "translateY(110%)"] }, { d: .3, bounce: 0 });
+}
+scrim.onclick = closeSheet;
+addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+
+/* ---------------- keyboard ---------------- */
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl+";
+// hints appear once someone uses the keyboard, and go away when they reach for the pointer
+addEventListener("keydown", e => { if (e.key === "Tab" || e.key.length === 1 || e.key.startsWith("Arrow")) document.body.classList.add("keys-on"); }, true);
+addEventListener("pointerdown", () => document.body.classList.remove("keys-on"), true);
+const KEYS = [
+  ["Anywhere", [["?", "Show these keys"], ["j k", "Next / previous story"], ["1 – 5", "Open a knob"], ["t", "Go to the timeline"], ["i", "Instances"], ["f", "Freeze automated changes"], ["Shift F", "Unfreeze"], ["Esc", "Close"]]],
+  ["On a story", [["↵", "Its main action (Review)"], ["x", "Dismiss a suggestion"], ["c", "Copy the story as text"], ["Shift C", "Copy today, oldest first"]]],
+  ["On the timeline", [["← →", "Move by 10 s (Shift: 100 s)"], ["[ ]", "Previous / next event"], ["Home End", "Oldest / now"], ["↵", "Open the story at that moment"]]],
+  ["On a knob", [["← →", "Turn one step (Shift: ten)"], ["Home End", "Minimum / maximum"], ["Tab", "FOR and ON; arrows choose"], [`${MOD}↵`, "Apply the plan"]]],
+];
+function showKeys() {
+  openSheet(`<h3 id="sheetTitle" tabindex="-1">Keyboard</h3><div class="desc">Everything works without a pointer.</div>
+    <div class="keys">${KEYS.map(([h, rows]) => `<section><h4>${h.toUpperCase()}</h4><dl>${rows.map(([k, d]) => `<dt>${k.split(" ").map(x => `<span>${x}</span>`).join("")}</dt><dd>${d}</dd>`).join("")}</dl></section>`).join("")}</div>`);
+}
+$("#keysBtn").onclick = showKeys;
+const sheetOpen = () => sheet.classList.contains("on");
+addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && sheetOpen()) { const b = $("#applyBtn"); if (b && !b.disabled) { e.preventDefault(); b.click(); } return; }
+  if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
+  if (e.target.closest?.("input, textarea, [contenteditable]")) return;
+  if (sheetOpen()) return; // the sheet's own controls handle keys
+  const story = document.activeElement?.closest?.(".story")?._s;
+  const knob = Object.values(K)[+e.key - 1];
+  const act = fn => { e.preventDefault(); fn(); };
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key, shift = e.shiftKey;
+  if (e.key === "?") act(showKeys);
+  else if (e.key === "j" || (e.key === "ArrowDown" && story)) act(() => moveStory(1));
+  else if (e.key === "k" || (e.key === "ArrowUp" && story)) act(() => moveStory(-1));
+  else if (knob) act(() => { const r = $(`.row[data-k="${knob.name}"]`); r.focus(); r.click(); });
+  else if (e.key === "t") act(() => { stripBox.focus(); kbBin ??= B - 1; scrubBin(kbBin); });
+  else if (e.key === "i") act(() => { $("#fleetBtn").focus(); $("#fleetBtn").click(); });
+  else if (key === "f" && shift) act(() => setFrozen(false));
+  else if (key === "f") act(() => S.frozen ? $("#freezeWhy").focus() : setFrozen(true));
+  else if (key === "c" && shift) act(() => $(".copyall")?.click());
+  else if (story && e.key === "Enter" && e.target.classList.contains("story")) act(() => story.actions?.[0]?.fn());
+  else if (story && e.key === "x" && story.actions?.[1]) act(() => story.actions[1].fn());
+  else if (story && e.key === "c") act(() => storyEl(story).querySelector(".copy").click());
+});
+{ // drag the grabber down to dismiss
+  const g = $("#grab"); let y0 = null;
+  g.addEventListener("pointerdown", e => { y0 = e.clientY; g.setPointerCapture(e.pointerId); });
+  g.addEventListener("pointermove", e => { if (y0 != null) sheet.style.transform = `translateY(${Math.max(0, e.clientY - y0)}px)`; });
+  g.addEventListener("pointerup", e => { if (y0 == null) return; const dy = e.clientY - y0; y0 = null; if (dy > 90) closeSheet(); else spring(sheet, { transform: [`translateY(${Math.max(0, dy)}px)`, "translateY(0px)"] }, { bounce: .25 }); });
+}
+
+/* ---------------- the encoder (Teenage Engineering knob + Rauno's tick wheel) ---------------- */
+const A0 = -225, A1 = 45; // a real knob's 270° sweep
+function openKnob(k, proposal) {
+  const isOpt = k.kind === "opt";
+  const n = isOpt ? k.options.length - 1 : 60;
+  const toFrac = v => isOpt ? k.options.indexOf(v) / n : k.log ? Math.log(v / k.min) / Math.log(k.max / k.min) : (v - k.min) / (k.max - k.min);
+  const fromFrac = f => {
+    if (isOpt) return k.options[Math.round(f * n)];
+    const v = k.log ? k.min * Math.pow(k.max / k.min, f) : k.min + f * (k.max - k.min);
+    const st = v > 2000 ? 100 : k.step; return clamp(Math.round(v / st) * st, k.min, k.max);
+  };
+  const cur = eff(k).v;
+  let val = proposal ? proposal.to : cur, lease = "30 min", scope = proposal ? "cp-5, cp-6" : "All 7";
+  const hist = (HISTORY[k.name] || []).map(([w, c, r]) => `<li><span>${w}</span><span><b>${c}</b>${r ? ` · ${r}` : ""}</span></li>`).join("");
+  const seg = (name, opts, on) => `<div class="seg" data-seg="${name}" role="radiogroup" aria-label="${name === "lease" ? "For how long" : "On which instances"}">${opts.map(o => `<button data-o="${o}" role="radio" aria-checked="${o === on}" tabindex="${o === on ? 0 : -1}" class="${o === on ? "on" : ""}">${o}</button>`).join("")}<span class="ind"></span></div>`;
+  openSheet(`
+    <h3 id="sheetTitle" tabindex="-1">${k.name}</h3><div class="desc">${k.about}</div>
+    ${proposal ? `<div class="why" style="margin-top:14px">${proposal.why}</div>` : ""}
+    <div class="encoder" id="enc" tabindex="0" role="slider" aria-label="${k.name}">
+      <svg viewBox="0 0 264 264" id="encSvg"></svg>
+      <div class="readout"><div><div class="big num" id="encBig"${isOpt ? ' style="font-size:28px"' : ""}></div><div class="unit">${k.unit || "&nbsp;"}</div><div class="was num" id="encWas"></div></div></div>
+    </div>
+    <div class="who">${whoSays(k)}</div>
+    <div class="history"><div class="h">BEFORE YOU CHANGE IT</div><ul>${hist}</ul></div>
+    <div class="choose"><span>FOR</span>${seg("lease", ["30 min", "2 h", "No end"], lease)}<span>ON</span>${seg("scope", ["cp-5, cp-6", "All 7"], scope)}</div>
+    <div class="plan" id="plan" aria-live="polite"></div>
+    <button class="btn ink apply" id="applyBtn" aria-keyshortcuts="${MOD === "⌘" ? "Meta" : "Control"}+Enter"></button>
+    ${eff(k).L === "pin" && !proposal ? `<button class="btn quiet apply" id="unpinBtn" style="margin-top:6px">Remove pin</button>` : ""}
+    ${proposal ? `<button class="btn quiet apply" id="notNow" style="margin-top:6px">Not now</button>` : ""}`);
+
+  const svg = $("#encSvg"), C = 132, R1 = 112, R2 = 124;
+  const ang = f => (A0 + f * (A1 - A0)) * Math.PI / 180;
+  const tickEls = [];
+  for (let i = 0; i <= n; i++) {
+    const a = ang(i / n), long = isOpt || i % 10 === 0, r1 = long ? R1 - 7 : R1;
+    tickEls.push(mk("line", { class: "t", x1: C + r1 * Math.cos(a), y1: C + r1 * Math.sin(a), x2: C + R2 * Math.cos(a), y2: C + R2 * Math.sin(a) }, svg));
+    if (isOpt) {
+      const ca = Math.cos(a);
+      const t = mk("text", { class: "optl", x: C + (R2 + 12) * ca, y: C + (R2 + 12) * Math.sin(a) + 4, "text-anchor": ca < -.2 ? "end" : ca > .2 ? "start" : "middle" }, svg);
+      t.textContent = k.options[i]; t.dataset.i = i;
+    }
+  }
+  tickEls[Math.round(toFrac(k.def) * n)]?.classList.add("def");
+  mk("circle", { class: "cap", cx: C, cy: C, r: 92 }, svg);
+  const needle = mk("line", { class: "needle" }, svg);
+  let shown = toFrac(val), lastDetent = Math.round(shown * n);
+  const paint = f => {
+    const a = ang(f);
+    needle.setAttribute("x1", C + 72 * Math.cos(a)); needle.setAttribute("y1", C + 72 * Math.sin(a));
+    needle.setAttribute("x2", C + 89 * Math.cos(a)); needle.setAttribute("y2", C + 89 * Math.sin(a));
+    const on = Math.round(f * n);
+    tickEls.forEach((t, i) => t.classList.toggle("on", i <= on));
+    svg.querySelectorAll(".optl").forEach(t => t.classList.toggle("on", +t.dataset.i === on));
+  };
+  const big = $("#encBig"), was = $("#encWas"), btn = $("#applyBtn"), enc = $("#enc");
+  // The plan: write the value into a scratch copy of the layer stack and read back what would be in effect.
+  const secs = () => lease === "No end" ? null : lease === "2 h" ? 7200 : 1800;
+  const effOf = layers => { for (let i = LAYERS.length - 1; i >= 0; i--) { const e = layers[LAYERS[i]]; if (e && (e.until == null || e.until > leaseNow())) return { L: LAYERS[i], ...e }; } };
+  const holder = e => e.L === "rule" ? "a rule" : e.L === "pin" ? "your pin" : e.L === "fleet" ? "a fleet rollout" : "an approved suggestion";
+  const plan = () => {
+    const L = proposal && val === proposal.to && secs() != null ? "agent" : "pin";
+    const until = secs() == null ? null : now() + secs();
+    const next = { ...k.layers, [L]: { v: val, until } };
+    const after = effOf(next), { [L]: _, ...rest } = next, under = effOf(rest);
+    const { rule, [L]: __, ...noRule } = next, base = effOf(noRule);
+    return { L, until, after, under, base, blocked: after.L !== L };
+  };
+  const unit = k.unit ? " " + k.unit : "";
+  // the same change as an MCP call, so the UI teaches the scriptable path
+  const call = (L, until) => `vis.set_knob ${JSON.stringify({ knob: k.name, value: val, layer: L, ...(until != null ? { for: lease === "2 h" ? "2h" : "30m" } : {}), ...(scope === "All 7" ? {} : { instances: scope.split(", ") }) })}`;
+  const cmdHtml = (L, until) => `<div class="cmd"><code>${call(L, until)}</code><button class="copy" data-call="${encodeURIComponent(call(L, until))}">copy</button></div>`;
+  $("#plan").addEventListener("click", e => { const b = e.target.closest("[data-call]"); if (b) copyText(decodeURIComponent(b.dataset.call), b); });
+  const label = () => {
+    big.textContent = fmt(val); enc.setAttribute("aria-valuetext", `${fmt(val)} ${k.unit || ""}`);
+    was.textContent = val !== cur ? `was ${fmt(cur)}` : "";
+    const changed = val !== cur, box = $("#plan");
+    btn.disabled = !changed;
+    if (!changed) { btn.textContent = "Turn the knob to change it"; box.innerHTML = ""; box.className = "plan"; return; }
+    const p = plan();
+    box.className = "plan" + (p.blocked ? " blocked" : "");
+    if (p.blocked) {
+      const e = p.after;
+      box.innerHTML = `<div class="h">PLAN</div>Approving won't change anything yet: <b>${holder(e)} holds ${k.name} at ${fmt(e.v)}</b>${e.until != null ? ` for ${left(e.until - now())} more` : ""}. Pinning ${fmt(val)} overrides it.`;
+      btn.textContent = `Pin ${fmt(val)}${unit} instead`;
+      box.insertAdjacentHTML("beforeend", cmdHtml("pin", p.until));
+      return;
+    }
+    const over = p.under.L === "rule" ? ` It overrides the rule holding it at ${fmt(p.under.v)}; the rule can't move ${k.name} while the pin lasts.` : "";
+    const then = p.until == null ? " Stays until you remove the pin."
+      : p.under.L === "rule" ? ` Then the rule takes over again if load is still high, otherwise back to ${fmt(p.base.v)}.`
+      : ` Then back to ${fmt(p.under.v)}.`;
+    box.innerHTML = `<div class="h">PLAN</div><b>${k.name} ${fmt(cur)} → ${fmt(val)}${unit}</b> ${p.L === "pin" ? "as your pin" : "in the agent layer"}${p.until != null ? ` for ${lease}` : ""}.${over}${then}`;
+    box.insertAdjacentHTML("beforeend", cmdHtml(p.L, p.until));
+    btn.dataset.kbd = `${MOD}↵`;
+    btn.textContent = p.L === "pin" ? `Pin ${fmt(val)}${unit}${p.until != null ? ` for ${lease}` : ""}` : `Approve ${fmt(val)}${unit} for ${lease}`;
+  };
+  const settle = () => { const from = shown, to = toFrac(val); tween(320, t => { shown = from + (to - from) * t; paint(shown); }); };
+  paint(shown); label();
+  const detent = i => { navigator.vibrate?.(4); const t = tickEls[i]; if (t) spring(t, { strokeWidth: ["3.5", "1.5"] }, { d: .25, bounce: 0 }); };
+  let drag = null;
+  enc.addEventListener("pointerdown", ev => {
+    enc.setPointerCapture(ev.pointerId); enc.classList.add("turning");
+    const r = enc.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const ring = Math.hypot(ev.clientX - cx, ev.clientY - cy) > r.width * 0.3; // grabbed the ring: rotate; grabbed the cap: slide vertically
+    drag = { cx, cy, f: shown, a: Math.atan2(ev.clientY - cy, ev.clientX - cx), y: ev.clientY, ring };
+  });
+  enc.addEventListener("pointermove", ev => {
+    if (!drag) return;
+    const a = Math.atan2(ev.clientY - drag.cy, ev.clientX - drag.cx);
+    let da = a - drag.a; drag.a = a; // accumulate in small steps so full turns never flip
+    if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI;
+    drag.acc = (drag.acc || 0) + da;
+    const byAngle = drag.acc / ((A1 - A0) * Math.PI / 180), byY = (drag.y - ev.clientY) / 260;
+    shown = clamp(drag.f + (drag.ring ? byAngle : byY), 0, 1);
+    paint(shown);
+    const v = fromFrac(shown); if (v !== val) { val = v; label(); }
+    const d = Math.round(shown * n); if (d !== lastDetent) { lastDetent = d; detent(d); }
+  });
+  const end = () => { if (!drag) return; drag = null; enc.classList.remove("turning"); settle(); };
+  enc.addEventListener("pointerup", end); enc.addEventListener("pointercancel", end);
+  enc.addEventListener("keydown", ev => {
+    const big = isOpt ? 1 : 10;
+    const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: big, PageDown: -big }[ev.key] * (ev.shiftKey && ev.key.startsWith("Arrow") ? big : 1);
+    let f;
+    if (ev.key === "Home") f = 0; else if (ev.key === "End") f = 1; else if (d) f = clamp(toFrac(val) + d / n, 0, 1); else return;
+    ev.preventDefault(); val = fromFrac(f); label(); settle(); detent(Math.round(f * n));
+  });
+  enc.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight Shift+ArrowLeft Shift+ArrowRight Home End");
+  document.querySelectorAll("#sheetBody .seg").forEach(sg => {
+    const ind = sg.querySelector(".ind");
+    const place = () => { const on = sg.querySelector("button.on"); ind.style.width = `${on.offsetWidth}px`; ind.style.transform = `translateX(${on.offsetLeft}px)`; };
+    requestAnimationFrame(place);
+    const opts = [...sg.querySelectorAll("button")];
+    sg.addEventListener("keydown", ev => { // radio group: arrows move and select
+      const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[ev.key]; if (!d) return;
+      ev.preventDefault(); const i = (opts.findIndex(o => o.classList.contains("on")) + d + opts.length) % opts.length; opts[i].click(); opts[i].focus();
+    });
+    opts.forEach(b => b.onclick = () => {
+      opts.forEach(o => { o.classList.toggle("on", o === b); o.setAttribute("aria-checked", String(o === b)); o.tabIndex = o === b ? 0 : -1; }); place();
+      if (sg.dataset.seg === "lease") lease = b.dataset.o; else scope = b.dataset.o;
+      label();
+    });
+  });
+  btn.onclick = () => {
+    const from = cur, p = plan(), L = p.blocked ? "pin" : p.L;
+    const prev = { ...k.layers };
+    k.layers[L] = { v: val, until: p.until };
+    const now_ = eff(k); // report what is actually in effect, never what was asked for
+    if (now_.v !== val) console.warn("plan mismatch", k.name, now_, val);
+    closeSheet(); renderKnobs(); bumpKnob(k.name);
+    const mark = { i: 359, label: `${k.name} → ${fmt(val)}` }; S.events.push(mark); drawStrip();
+    if (proposal) S.stories = S.stories.filter(x => x !== proposal.story);
+    const where = scope === "All 7" ? "" : ` on ${scope}`;
+    const how = L === "pin" ? (p.until == null ? "Pinned until you remove it." : `Pinned for ${lease}.`) : `Approved for ${lease}.`;
+    const s = story({ src: L === "agent" ? "you approved a suggestion" : "you", title: `${k.name} is now ${fmt(now_.v)}${unit}${where}.`,
+      body: `${how}${p.under.L === "rule" || p.blocked ? " It overrides the rule." : ""} Checking the effect in a minute.` });
+    toast(`${k.name} is now ${fmt(now_.v)}.`, "Undo", () => { k.layers = prev; S.events = S.events.filter(e => e !== mark); drawStrip(); renderKnobs(); bumpKnob(k.name); dropStory(s); });
+    const before = avg(-14, -7);
+    setTimeout(() => {
+      const d = avg(-6) - before;
+      const caveat = S.spike > .15 ? " A spike overlaps, so don't read much into it." : scope === "All 7" ? "" : " Two instances is too few to be sure.";
+      s.body = `${how} p99 ${d < 0 ? "fell" : "rose"} ${Math.abs(d).toFixed(1)} ms${where}.${caveat}`;
+      renderStories();
+    }, 6500);
+  };
+  if (proposal) $("#notNow").onclick = () => { closeSheet(); dropStory(proposal.story); };
+  const un = $("#unpinBtn");
+  if (un) un.onclick = () => {
+    const prev = k.layers.pin; delete k.layers.pin; closeSheet(); renderKnobs(); bumpKnob(k.name);
+    const s = story({ src: "you", title: `${k.name} is back to ${fmt(eff(k).v)}.`, body: `You removed your pin of ${fmt(prev.v)}.` });
+    toast(`Pin removed. ${k.name} is ${fmt(eff(k).v)}.`, "Undo", () => { k.layers.pin = prev; renderKnobs(); bumpKnob(k.name); dropStory(s); });
+  };
+}
+const avg = (a, b) => { const xs = S.series.slice(a, b); return xs.reduce((p, c) => p + c, 0) / xs.length; };
+
+/* ---------------- toast ---------------- */
+let toastT;
+function toast(msg, action, fn) {
+  const t = $("#toast"); t.innerHTML = msg + (action ? `<button>${action}</button>` : "");
+  const hide = () => spring(t, { transform: ["translate(-50%, 0%)", "translate(-50%, 200%)"], opacity: [1, 0] }, { d: .3, bounce: 0 });
+  if (action) t.querySelector("button").onclick = () => { fn(); hide(); };
+  spring(t, { transform: ["translate(-50%, 200%)", "translate(-50%, 0%)"], opacity: [0, 1] }, { d: .35, bounce: .15 });
+  clearTimeout(toastT); toastT = setTimeout(hide, 5000);
+}
+
+/* ---------------- instances ---------------- */
+const INST = ["cp-1", "cp-2", "cp-3", "cp-4", "cp-5", "cp-6", "cp-7"].map((id, i) => ({ id, cpu: 40, mem: 50, memBase: rnd(44, 58), probe: rnd(.9, 1.5), build: i === 6 ? "7a1b0d4" : "9f3c2e1" }));
+const hotInstances = () => INST.filter(i => i.cpu > 75).map(i => i.id);
+const lowMem = () => INST.filter(i => i.mem > 85);
+function renderFleet() {
+  $("#dots").innerHTML = INST.map(i => `<i class="${i.cpu > 75 || i.mem > 85 ? "hot" : ""}"></i>`).join("");
+  const hot = hotInstances(), low = lowMem().map(i => i.id);
+  const said = [hot.length && `${hot.join(", ")} running hot`, low.length && `${low.join(", ")} low on memory`].filter(Boolean);
+  $("#fleetTxt").textContent = said.length ? said.join(" · ") : "all 7 healthy";
+}
+$("#fleetBtn").onclick = () => openSheet(`<h3 id="sheetTitle" tabindex="-1">Instances</h3><div class="desc">Live CPU, memory and probe cost for each instance.</div>
+  <div style="margin-top:14px">${INST.map(i => `<div class="inst"><b>${i.id}</b><div><div class="bar"><i class="${i.cpu > 75 ? "hot" : ""}" style="width:${i.cpu}%"></i></div>
+  <div style="font-size:12px;color:var(--ink-3);margin-top:4px">CPU ${i.cpu.toFixed(0)}% · mem <span${i.mem > 85 ? ' style="color:var(--red)"' : ""}>${i.mem.toFixed(0)}%</span> · probes ${i.probe.toFixed(1)}% of 2%${i.build !== "9f3c2e1" ? " · older build" : ""}</div></div>
+  <span class="num" style="color:var(--ink-3);font-size:13px">${i.build.slice(0, 4)}</span></div>`).join("")}</div>`);
+
+/* ---------------- freeze ---------------- */
+// RFC: a freeze stops rules, agent changes and rollouts on every instance, and holds current values.
+// It is fleet-wide, so it says who froze, since when, and why.
+let freezeStory = null, freezeMark = null;
+const freezeBody = () => `Rules, approved suggestions and rollouts are on hold. Every knob keeps its value and lease clocks stop.${S.freezeWhy ? ` Reason: “${S.freezeWhy}”.` : ""}`;
+function renderFreeze() {
+  document.body.classList.toggle("frozen", S.frozen);
+  $("#freezeBtn").setAttribute("aria-pressed", String(S.frozen));
+  if (!S.frozen) { $("#freezeLbl").textContent = "Freeze"; return; }
+  const mins = Math.floor((now() - S.frozenAt) / 60);
+  $("#freezeLbl").textContent = mins < 1 ? "Frozen" : `Frozen ${mins} min`;
+  $("#freezeWho").textContent = `by you · since ${clock(S.frozenAt)}`;
+}
+function setFrozen(on) {
+  if (on === S.frozen) return;
+  if (on) { S.frozenAt = now(); S.freezeWhy = ""; $("#freezeWhy").value = ""; }
+  else { const d = now() - S.frozenAt; Object.values(K).forEach(k => Object.values(k.layers).forEach(e => { if (e.until != null) e.until += d; })); } // leases resume where they stopped
+  S.frozen = on;
+  renderFreeze(); renderKnobs(); headline();
+  if (on) {
+    freezeMark = { i: 359, label: "frozen" }; S.events.push(freezeMark);
+    freezeStory = story({ t0: now(), live: true, src: "you", title: "You froze automated changes.", body: freezeBody() });
+    if (matchMedia("(pointer: fine)").matches) $("#freezeWhy").focus({ preventScroll: true }); // invite a reason, never require one; no surprise keyboard on phones
+  } else {
+    S.events.push({ i: 359, label: "unfrozen" });
+    const mins = Math.max(1, Math.round((now() - S.frozenAt) / 60));
+    if (freezeStory) { freezeStory.live = false; freezeStory.t1 = now(); freezeStory.title = `Automated changes were frozen for ${mins} min.`; freezeStory.body = freezeBody().replace("are on hold. Every knob keeps its value and lease clocks stop.", "were held.") + " Leases picked up where they stopped."; renderStories(); freezeStory = null; }
+  }
+  drawStrip();
+  toast(on ? "Frozen. Every knob holds its current value." : "Unfrozen. Leases pick up where they stopped.");
+}
+$("#freezeBtn").onclick = () => setFrozen(!S.frozen);
+$("#unfreezeBtn").onclick = () => setFrozen(false);
+$("#freezeWhy").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); e.stopPropagation(); e.target.blur(); $("#freezeBtn").focus(); } });
+$("#freezeWhy").addEventListener("change", e => { S.freezeWhy = e.target.value.trim(); if (freezeStory) { freezeStory.body = freezeBody(); renderStories(); } });
+
+/* ---------------- spike, rule, suggestion ---------------- */
+let spikeStory = null, lastSpike = null, spikeStart = 0, peak = 0;
+function startSpike() {
+  if (performance.now() < S.spikeUntil) return;
+  S.spikeUntil = performance.now() + 16000; spikeStart = now(); peak = 0;
+  S.events.push({ i: 359, label: "spike" });
+}
+$("#spikeBtn").onclick = startSpike;
+setTimeout(startSpike, 9000); // calm first; then something happens
+
+function ruleTick() {
+  const k = K.BatchSize, target = eff(K.SchedTarget).v;
+  if (S.sched <= target) { S.condSince = null; return; }
+  if (eff(k).L === "pin") { if (spikeStory && !spikeStory.pinned) { spikeStory.pinned = true; spikeStory.body = `Scheduler latency is over ${target} ms. A rule would lower BatchSize, but your pin holds it at ${fmt(eff(k).v)}.`; renderStories(); } return; }
+  S.condSince ??= now();
+  if (now() - S.condSince < 30 || now() < S.cooldown) return;
+  if (S.frozen) { if (spikeStory && !spikeStory.held) { spikeStory.held = true; spikeStory.body = `Scheduler latency is over ${target} ms. A rule would lower BatchSize, but changes are frozen, so it's holding off.`; renderStories(); } return; }
+  const from = eff(k).v, to = clamp(from - 16, k.min, k.max);
+  k.layers.rule = { v: to, until: now() + 600 };
+  S.cooldown = now() + 120; S.condSince = null;
+  renderKnobs(); bumpKnob("BatchSize");
+  S.events.push({ i: 359, label: `rule: BatchSize ${to}` });
+  if (spikeStory) { spikeStory.body = `Scheduler latency stayed over ${target} ms for 30 s, so a rule lowered BatchSize ${from} → ${to} there. It reverts on its own.`; renderStories(); }
+}
+function spikeTick() {
+  const p = S.series[359], over = p > 50;
+  if (over && !spikeStory) lastSpike = spikeStory = story({ t0: spikeStart, live: true, alert: true, src: "cp-5, cp-6", title: "Latency spiked on cp-5 and cp-6.", body: "A scan-heavy tenant arrived. A flight recording was saved." });
+  if (spikeStory) peak = Math.max(peak, p);
+  if (spikeStory && !over && S.spike < .15) {
+    spikeStory.alert = false; spikeStory.live = false; spikeStory.t1 = now();
+    spikeStory.title = "Latency spiked on cp-5 and cp-6, and recovered.";
+    const r = K.BatchSize.layers.rule;
+    spikeStory.body = `p99 peaked at ${peak.toFixed(0)} ms for about ${Math.max(1, Math.round((now() - spikeStart) / 60))} min.${r ? ` A rule lowered BatchSize to ${r.v}, which helped it settle.` : ""} A flight recording was saved.`;
+    renderStories(); spikeStory = null;
+    if (!S.suggested) setTimeout(suggest, 3500);
+  }
+}
+// A second, unrelated problem: cp-7 (the only instance on the older build) leaks memory.
+let leakStory = null;
+function startLeak() { if (INST[6].leak == null) { INST[6].leak = 82; INST[6].leakT0 = now(); } }
+$("#leakBtn").onclick = startLeak;
+setTimeout(startLeak, 1000); // starts alone, overlaps the spike, ends first: one, two, then one problem
+function leakTick() {
+  const c = INST[6];
+  if (c.leak == null) return;
+  c.leak += .6; c.mem = c.leak;
+  if (c.mem > 85 && !leakStory) leakStory = story({ t0: c.leakT0, live: true, alert: true, src: "cp-7", title: "cp-7 is running low on memory.", body: `Heap is past 85% of its limit and climbing about 4 points a minute. cp-7 is the only instance on the older build, 7a1b0d4; the ${clock(DEPLOY_T)} deploy skipped it.` });
+  if (c.leak >= 96) {
+    c.leak = null; c.mem = 41; c.restartedAt = now();
+    S.events.push({ i: 359, label: "cp-7 restarted" });
+    if (leakStory) {
+      leakStory.alert = false; leakStory.live = false; leakStory.t1 = now(); leakStory.title = "cp-7 ran out of memory and restarted.";
+      leakStory.body = "It came back on the older build, 7a1b0d4, with default knob values, so the leak will likely return. The other six run 9f3c2e1 and stayed flat.";
+      renderStories(); leakStory = null;
+    }
+  }
+}
+function suggest() {
+  S.suggested = true;
+  const to = Math.round(eff(K.CacheSize).v * 1.4 / 50) * 50;
+  const p = { to, why: "Hit rate on cp-5 and cp-6 dropped to 71% during the spike. The last time CacheSize went up like this, p99 fell about 5 ms." };
+  p.story = story({ t0: lastSpike?.t0, t1: lastSpike?.t1, src: "suggested by the agent", title: `Grow CacheSize to ${fmt(to)} MiB on cp-5 and cp-6?`, body: "Hit rate there is 71% and evictions are high. It would revert on its own after 30 min.",
+    actions: [{ label: "Review", fn: () => openKnob(K.CacheSize, p) }, { label: "Dismiss", fn: () => dropStory(p.story) }] });
+}
+
+/* ---------------- main loop: one bucket per second ---------------- */
+let minute = -1;
+setInterval(() => {
+  S.spike += ((performance.now() < S.spikeUntil ? 1 : 0) - S.spike) * .25;
+  S.series.push(point()); S.series.shift();
+  S.events.forEach(e => e.i--); S.events = S.events.filter(e => e.i >= 0);
+  S.sched = 1.6 + S.spike * 7.5 * (eff(K.BatchSize).v / 64) + rnd(-.2, .2);
+  INST.forEach((inst, i) => { const hotOne = i === 4 || i === 5; inst.cpu = clamp((hotOne ? 48 : 38) + S.spike * (hotOne ? 45 : 8) + rnd(-5, 5), 5, 99); inst.mem = inst.memBase + S.spike * 6 + rnd(-1.5, 1.5); });
+  leakTick();
+  drawStrip(); if (scrubX != null) scrub({ clientX: scrubX }); else if (kbBin != null) scrubBin(kbBin); headline(); renderFreeze(); renderFleet(); ruleTick(); spikeTick();
+  while (lapsed.length) { const [k, L] = lapsed.shift(); if (L === "rule") story({ src: "rule", title: `${k.name} is back to ${fmt(eff(k).v)}.`, body: "The rule's lease ran out once load was back to normal." }); if (L === "pin") story({ src: "you", title: `${k.name} is back to ${fmt(eff(k).v)}.`, body: "Your pin ran its course. Make it permanent by changing the default in code." });
+    if (L === "agent") story({ src: "approved suggestion", title: `${k.name} is back to ${fmt(eff(k).v)}.`, body: "The approved change ran its course." }); renderKnobs(); }
+  const m = Math.floor(now() / 60); if (m !== minute) { minute = m; renderKnobs(); }
+}, 1000);
+
+document.querySelectorAll(".frame").forEach(f => ["tl", "tr", "bl", "br"].forEach(c => { const e = document.createElement("span"); e.className = "c " + c; e.textContent = "+"; f.appendChild(e); }));
+renderKnobs(); renderFleet(); headline(); buildStrip();
+</script>
+</body>
+</html>

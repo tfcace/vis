@@ -1,0 +1,1329 @@
+{
+ "api": 1,
+ "build": "(devel)",
+ "fleet": {
+  "covers": "5 of 6 members; can't vouch for cp-3 (dead, not heard from for 1m20s)",
+  "age": "1s",
+  "members": [
+   {
+    "name": "cp-1",
+    "id": "1ac40633928b3fad",
+    "addr": "cp-1-peers:7946",
+    "build": "(devel)",
+    "state": "alive",
+    "self": true,
+    "cpu_used": 0.24,
+    "cpu_limit": 0.25,
+    "throttled": 0.95,
+    "slos": [
+     {
+      "route": "GET /k/{key}",
+      "p99_ms": 2550.136,
+      "requests": 5705,
+      "met": false
+     }
+    ],
+    "held": [],
+    "pressures": [
+     {
+      "resource": "cpu",
+      "why": "throttled in 100% of periods at its 0.25-core limit",
+      "levers": [
+       {
+        "knob": "compress_level",
+        "value": "9",
+        "position": 1,
+        "about": "Response compression level (flate), 1 to 9: higher compresses smaller.",
+        "observed": "last time 9 \u2192 1: GET /k/{key} p99 -99%, while other things changed too"
+       },
+       {
+        "knob": "scan_limit",
+        "value": "10000 rps",
+        "position": 1,
+        "about": "Requests per second admitted from the scan tenant (X-Tenant: scan); the rest get 429."
+       },
+       {
+        "knob": "log_level",
+        "value": "0",
+        "position": 0.67,
+        "about": "slog level: -4 debug, 0 info, 4 warn, 8 error.",
+        "people_only": true
+       }
+      ]
+     }
+    ],
+    "last_change": "compress_level 1 \u2192 9: agent:chaos's lease ended, 20s ago: its numbers here, over the last 20s, are partly from before it"
+   },
+   {
+    "name": "cp-2",
+    "id": "cp2cp2",
+    "addr": "cp-2-peers:7946",
+    "build": "(devel)",
+    "state": "alive",
+    "cpu_used": 0.12,
+    "cpu_limit": 0.25,
+    "throttled": 0,
+    "slos": [
+     {
+      "route": "GET /k/{key}",
+      "p99_ms": 17.825,
+      "requests": 7829,
+      "met": true
+     }
+    ],
+    "held": [
+     {
+      "knob": "compress_level",
+      "value": "1",
+      "by": "agent:chaos",
+      "ends_in": "27m50s"
+     }
+    ],
+    "last_change": "compress_level 9 \u2192 1 by agent:chaos, 2m11s ago"
+   },
+   {
+    "name": "cp-3",
+    "id": "a69f07ca06c6d14e",
+    "addr": "cp-3-peers:7946",
+    "build": "(devel)",
+    "state": "dead",
+    "cpu_used": 0,
+    "cpu_limit": 0,
+    "throttled": 0,
+    "slos": [],
+    "unaccounted": true,
+    "held": []
+   },
+   {
+    "name": "cp-4",
+    "id": "cp4cp4",
+    "addr": "cp-4-peers:7946",
+    "build": "(devel)",
+    "state": "alive",
+    "cpu_used": 0.11,
+    "cpu_limit": 0.25,
+    "throttled": 0.0,
+    "slos": [
+     {
+      "route": "GET /k/{key}",
+      "p99_ms": 19.2,
+      "requests": 7410,
+      "met": true
+     }
+    ],
+    "held": [],
+    "last_change": "compress_level 1 \u2192 9: restarted, 48s ago",
+    "restarts": 2,
+    "restarted": "48s",
+    "lost": [
+     {
+      "knob": "compress_level",
+      "value": "1",
+      "by": "agent:chaos"
+     }
+    ]
+   },
+   {
+    "name": "cp-5",
+    "id": "cp5cp5",
+    "addr": "cp-5-peers:7946",
+    "build": "(devel)",
+    "state": "alive",
+    "cpu_used": 0.13,
+    "cpu_limit": 0.25,
+    "throttled": 0,
+    "slos": [
+     {
+      "route": "GET /k/{key}",
+      "p99_ms": 18.4,
+      "requests": 7102,
+      "met": true
+     }
+    ],
+    "held": [
+     {
+      "knob": "compress_level",
+      "value": "1",
+      "by": "agent:chaos",
+      "ends_in": "27m41s"
+     }
+    ],
+    "last_change": "compress_level 9 \u2192 1 by agent:chaos, 2m20s ago",
+    "from_gossip": "9s"
+   },
+   {
+    "name": "cp-6",
+    "id": "cp6cp6",
+    "addr": "cp-6-peers:7946",
+    "build": "(devel)",
+    "state": "alive",
+    "cpu_used": 0.12,
+    "cpu_limit": 0.25,
+    "throttled": 0,
+    "slos": [
+     {
+      "route": "GET /k/{key}",
+      "p99_ms": 17.9,
+      "requests": 7333,
+      "met": true
+     }
+    ],
+    "held": [
+     {
+      "knob": "compress_level",
+      "value": "1",
+      "by": "agent:chaos",
+      "ends_in": "27m12s"
+     }
+    ],
+    "last_change": "compress_level 9 \u2192 1 by agent:chaos, 2m49s ago",
+    "frozen": true
+   }
+  ],
+  "slos": [
+   {
+    "route": "GET /k/{key}",
+    "objective_ms": 40,
+    "fleet_p99_ms": 1120.4,
+    "requests": 35200,
+    "met": false,
+    "partial": "can't vouch for cp-3: not heard from for 1m20s, and it may still be taking traffic"
+   }
+  ],
+  "stand_out": [
+   {
+    "member": "cp-1",
+    "why": "GET /k/{key} p99 2.6 s is over its objective while cp-2 meets it; throttled in 95% of CPU periods while the rest aren't; changed 20s ago (compress_level 1 \u2192 9: agent:chaos's lease ended), so these numbers, over the last 20s, are partly from before it: impact with instance=\"cp-1\" says what the change did; short of cpu there (throttled in 100% of periods at its 0.25-core limit); what spends it there: compress_level at 9, scan_limit at 10000 rps, log_level at 0 (a person's to change). What's different about it: its compress_level is 9, while the others have 1",
+    "look": "metrics, knobs, history or profile with instance=\"cp-1\""
+   },
+   {
+    "member": "cp-4",
+    "why": "GET /k/{key} p99 19 ms meets its objective; restarted twice in 10 minutes, the last 48s ago, and the restart dropped compress_level 1 (agent:chaos's). What's different about it: its compress_level is 9, while the others have 1",
+    "look": "metrics, knobs, history or profile with instance=\"cp-4\""
+   },
+   {
+    "member": "cp-3",
+    "why": "not heard from for 1m20s, and it didn't say it was leaving: it may still be taking traffic, and nothing here can say how it is doing",
+    "look": "check that the instance is running and whether the load balancer still sends to it; it leaves this list when it restarts under its name, or after 10 minutes"
+   }
+  ],
+  "differ": [
+   {
+    "what": "compress_level",
+    "values": {
+     "cp-1": "9",
+     "cp-2": "1",
+     "cp-4": "9",
+     "cp-5": "1",
+     "cp-6": "1"
+    },
+    "set_by": {
+     "cp-2": "agent:chaos",
+     "cp-5": "agent:chaos",
+     "cp-6": "agent:chaos"
+    }
+   },
+   {
+    "what": "build",
+    "values": {
+     "cp-1": "(devel)",
+     "cp-2": "(devel)",
+     "cp-4": "a1f3c90",
+     "cp-5": "(devel)",
+     "cp-6": "(devel)"
+    }
+   }
+  ],
+  "missing": [
+   "cp-3: dead: not heard from for 1m20s"
+  ],
+  "common": [
+   "the CPU limit changed 2 \u2192 0.25 cores on every member that answered (5 of 6), 3m26s ago"
+  ],
+  "last_rollout": {
+   "coordinator": "cp-1",
+   "process": "1ac40633928b3fad",
+   "seq": 3,
+   "set": "compress_level=1",
+   "by": "agent:chaos",
+   "at": "2026-11-03T15:51:53Z",
+   "outcome": "running",
+   "stage_2": [
+    "cp-1",
+    "cp-2",
+    "cp-5",
+    "cp-6"
+   ],
+   "state": "writing stage 2",
+   "result": [
+    "cp-1: GET /k/{key} p99 1946 \u2192 18 ms; CPU 0.25 \u2192 0.09 cores, throttled 100% \u2192 0%."
+   ],
+   "fleet": "",
+   "not_reached": [
+    "cp-4: didn't answer in 2s"
+   ]
+  }
+ },
+ "freeze": {
+  "frozen": false
+ },
+ "history": [
+  {
+   "at": "2026-11-03T15:50:11Z",
+   "kind": "rule",
+   "fields": {
+    "error": "",
+    "event": "started",
+    "knob": "batch_size",
+    "limit": 5,
+    "rule": "batch_backoff",
+    "signal": 0,
+    "signal_name": "sched.p99",
+    "stalls": 0,
+    "unit": "ms"
+   }
+  },
+  {
+   "at": "2026-11-03T15:51:23Z",
+   "kind": "environment",
+   "fields": {
+    "event": "cpu_limit_changed",
+    "new": 0.25,
+    "old": 2
+   }
+  },
+  {
+   "at": "2026-11-03T15:51:27Z",
+   "kind": "change",
+   "fields": {
+    "actor": "rule:batch_backoff",
+    "build": "(devel)",
+    "by": -16,
+    "change": 1,
+    "in_effect": "rule",
+    "knob": "batch_size",
+    "layer": "rule",
+    "lease": "1m0s",
+    "lease_id": 1,
+    "new": 48,
+    "old": 64,
+    "op": "step",
+    "reason": "sched.p99 872ms > 5ms",
+    "then": 64,
+    "value": 48
+   }
+  },
+  {
+   "at": "2026-11-03T15:51:39Z",
+   "kind": "change",
+   "fields": {
+    "actor": "rule:batch_backoff",
+    "build": "(devel)",
+    "by": -12,
+    "change": 2,
+    "in_effect": "rule",
+    "knob": "batch_size",
+    "layer": "rule",
+    "lease": "1m0s",
+    "lease_id": 2,
+    "new": 36,
+    "old": 48,
+    "op": "step",
+    "reason": "sched.p99 1.21e+03ms > 5ms",
+    "then": 64,
+    "value": 36
+   }
+  },
+  {
+   "at": "2026-11-03T15:51:49Z",
+   "kind": "change",
+   "fields": {
+    "actor": "rule:batch_backoff",
+    "build": "(devel)",
+    "by": -9,
+    "change": 3,
+    "in_effect": "rule",
+    "knob": "batch_size",
+    "layer": "rule",
+    "lease": "1m0s",
+    "lease_id": 3,
+    "new": 27,
+    "old": 36,
+    "op": "step",
+    "reason": "sched.p99 738ms > 5ms",
+    "then": 64,
+    "value": 27
+   }
+  },
+  {
+   "at": "2026-11-03T15:52:00Z",
+   "kind": "change",
+   "fields": {
+    "actor": "rule:batch_backoff",
+    "build": "(devel)",
+    "by": -7,
+    "change": 4,
+    "in_effect": "rule",
+    "knob": "batch_size",
+    "layer": "rule",
+    "lease": "1m0s",
+    "lease_id": 4,
+    "new": 20,
+    "old": 27,
+    "op": "step",
+    "reason": "sched.p99 872ms > 5ms",
+    "then": 64,
+    "value": 20
+   }
+  },
+  {
+   "at": "2026-11-03T15:52:09Z",
+   "kind": "rule",
+   "fields": {
+    "error": "",
+    "event": "stalled",
+    "knob": "batch_size",
+    "limit": 5,
+    "rule": "batch_backoff",
+    "signal": 1476.395,
+    "signal_name": "sched.p99",
+    "stalls": 2,
+    "unit": "ms"
+   }
+  },
+  {
+   "at": "2026-11-03T15:52:37Z",
+   "kind": "change",
+   "fields": {
+    "actor": "agent:chaos",
+    "build": "(devel)",
+    "change": 5,
+    "in_effect": "agent",
+    "knob": "compress_level",
+    "layer": "agent",
+    "lease": "30m0s",
+    "lease_id": 5,
+    "new": 1,
+    "old": 9,
+    "op": "set",
+    "reason": "CPU cut to a quarter core on every replica: lighter compression (rollout)",
+    "then": 9,
+    "value": 1
+   }
+  },
+  {
+   "at": "2026-11-03T15:52:45Z",
+   "kind": "rule",
+   "fields": {
+    "error": "",
+    "event": "cleared",
+    "knob": "batch_size",
+    "limit": 5,
+    "rule": "batch_backoff",
+    "signal": 0.425,
+    "signal_name": "sched.p99",
+    "stalls": 0,
+    "unit": "ms"
+   }
+  },
+  {
+   "at": "2026-11-03T15:53:00Z",
+   "kind": "change",
+   "fields": {
+    "actor": "lease",
+    "build": "(devel)",
+    "change": 6,
+    "holder": "rule:batch_backoff",
+    "in_effect": "default",
+    "knob": "batch_size",
+    "layer": "rule",
+    "lease_id": 4,
+    "new": 64,
+    "old": 20,
+    "op": "expire"
+   }
+  },
+  {
+   "at": "2026-11-03T15:53:29Z",
+   "kind": "change",
+   "fields": {
+    "actor": "agent:chaos",
+    "build": "(devel)",
+    "change": 7,
+    "in_effect": "agent",
+    "knob": "compress_level",
+    "layer": "agent",
+    "lease": "1m0s",
+    "lease_id": 6,
+    "new": 1,
+    "old": 1,
+    "op": "set",
+    "reason": "renewing cp-1 alone, for a minute",
+    "then": 9,
+    "value": 1
+   }
+  },
+  {
+   "at": "2026-11-03T15:54:23Z",
+   "kind": "lease",
+   "fields": {
+    "actor": "agent:chaos",
+    "event": "ending",
+    "knob": "compress_level",
+    "layer": "agent",
+    "lease_id": 6,
+    "left": "6s",
+    "then": 9,
+    "value": 1
+   }
+  },
+  {
+   "at": "2026-11-03T15:54:29Z",
+   "kind": "change",
+   "fields": {
+    "actor": "lease",
+    "build": "(devel)",
+    "change": 8,
+    "holder": "agent:chaos",
+    "in_effect": "default",
+    "knob": "compress_level",
+    "layer": "agent",
+    "lease_id": 6,
+    "new": 9,
+    "old": 1,
+    "op": "expire"
+   }
+  },
+  {
+   "at": "2026-11-03T15:54:34Z",
+   "kind": "change",
+   "fields": {
+    "actor": "rule:batch_backoff",
+    "build": "(devel)",
+    "by": -16,
+    "change": 9,
+    "in_effect": "rule",
+    "knob": "batch_size",
+    "layer": "rule",
+    "lease": "1m0s",
+    "lease_id": 7,
+    "new": 48,
+    "old": 64,
+    "op": "step",
+    "reason": "sched.p99 1.48e+03ms > 5ms",
+    "then": 64,
+    "value": 48
+   }
+  },
+  {
+   "at": "2026-11-03T15:54:43Z",
+   "kind": "rule",
+   "fields": {
+    "effects": [
+     {
+      "name": "sched.p99",
+      "from": 1476,
+      "to": 738,
+      "unit": "ms",
+      "worse": false
+     },
+     {
+      "name": "GET /k/{key} p99",
+      "from": 1275,
+      "to": 1678,
+      "unit": "ms",
+      "worse": true
+     }
+    ],
+    "event": "stopped",
+    "knob": "batch_size",
+    "reason": "its signal sched.p99 improved (1476 ms \u2192 738 ms) but GET /k/{key} p99 stayed over its 40 ms objective, no closer to it (1275 ms \u2192 1678 ms), after 2 steps in a row",
+    "rule": "batch_backoff",
+    "verdict": "no_closer"
+   }
+  },
+  {
+   "at": "2026-11-03T15:54:43Z",
+   "kind": "change",
+   "fields": {
+    "actor": "rule:batch_backoff",
+    "build": "(devel)",
+    "change": 10,
+    "in_effect": "default",
+    "knob": "batch_size",
+    "layer": "rule",
+    "lease_id": 7,
+    "new": 64,
+    "old": 48,
+    "op": "revert",
+    "reason": "rule batch_backoff stopped: its signal sched.p99 improved (1476 ms \u2192 738 ms) but GET /k/{key} p99 stayed over its 40 ms objective, no closer to it (1275 ms \u2192 1678 ms), after 2 steps in a row"
+   }
+  }
+ ],
+ "knobs": [
+  {
+   "name": "cache_size",
+   "type": "int",
+   "unit": "MiB",
+   "about": "Memory for cached values.",
+   "uses": [
+    "memory"
+   ],
+   "min": 1,
+   "max": 10000,
+   "default": 1000,
+   "pull": [
+    "human",
+    "agent",
+    "rule"
+   ],
+   "value": 1000,
+   "layer": "default",
+   "stack": [
+    {
+     "layer": "default",
+     "value": 1000,
+     "then": 1000
+    }
+   ]
+  },
+  {
+   "name": "batch_size",
+   "type": "int",
+   "unit": "items",
+   "about": "Most cache misses fetched from the origin in one request.",
+   "min": 1,
+   "max": 512,
+   "default": 64,
+   "pull": [
+    "human",
+    "agent",
+    "rule"
+   ],
+   "value": 64,
+   "layer": "default",
+   "stack": [
+    {
+     "layer": "default",
+     "value": 64,
+     "then": 64
+    }
+   ]
+  },
+  {
+   "name": "sched_target",
+   "type": "duration",
+   "about": "Threshold for the batch_backoff rule: Go scheduler latency p99 above this makes the rule lower batch_size.",
+   "min": "1ms",
+   "max": "50ms",
+   "default": "5ms",
+   "pull": [
+    "human",
+    "agent"
+   ],
+   "value": "5ms",
+   "layer": "default",
+   "stack": [
+    {
+     "layer": "default",
+     "value": "5ms",
+     "then": "5ms"
+    }
+   ]
+  },
+  {
+   "name": "log_level",
+   "type": "int",
+   "about": "slog level: -4 debug, 0 info, 4 warn, 8 error.",
+   "saves": [
+    "cpu"
+   ],
+   "min": -4,
+   "max": 8,
+   "default": 0,
+   "pull": [
+    "human"
+   ],
+   "value": 0,
+   "layer": "default",
+   "stack": [
+    {
+     "layer": "default",
+     "value": 0,
+     "then": 0
+    }
+   ]
+  },
+  {
+   "name": "scan_limit",
+   "type": "int",
+   "unit": "rps",
+   "about": "Requests per second admitted from the scan tenant (X-Tenant: scan); the rest get 429.",
+   "uses": [
+    "cpu",
+    "origin_keys_per_s"
+   ],
+   "min": 0,
+   "max": 10000,
+   "default": 10000,
+   "pull": [
+    "human",
+    "agent"
+   ],
+   "value": 10000,
+   "layer": "default",
+   "stack": [
+    {
+     "layer": "default",
+     "value": 10000,
+     "then": 10000
+    }
+   ]
+  },
+  {
+   "name": "compress_level",
+   "type": "int",
+   "about": "Response compression level (flate), 1 to 9: higher compresses smaller.",
+   "uses": [
+    "cpu"
+   ],
+   "saves": [
+    "response_kb"
+   ],
+   "min": 1,
+   "max": 9,
+   "default": 9,
+   "pull": [
+    "human",
+    "agent"
+   ],
+   "value": 9,
+   "layer": "default",
+   "stack": [
+    {
+     "layer": "default",
+     "value": 9,
+     "then": 9
+    }
+   ]
+  }
+ ],
+ "now": "2026-11-03T15:54:50Z",
+ "pressures": [
+  {
+   "resource": "cpu",
+   "why": "throttled in 100% of periods at its 0.25-core limit",
+   "levers": [
+    {
+     "knob": "compress_level",
+     "value": "9",
+     "position": 1,
+     "about": "Response compression level (flate), 1 to 9: higher compresses smaller.",
+     "observed": "last time 9 \u2192 1: GET /k/{key} p99 -99%, while other things changed too"
+    },
+    {
+     "knob": "scan_limit",
+     "value": "10000 rps",
+     "position": 1,
+     "about": "Requests per second admitted from the scan tenant (X-Tenant: scan); the rest get 429."
+    },
+    {
+     "knob": "log_level",
+     "value": "0",
+     "position": 0.67,
+     "about": "slog level: -4 debug, 0 info, 4 warn, 8 error.",
+     "people_only": true
+    }
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "route": "GET /k/{key}",
+   "slo_ms": 40,
+   "now": {
+    "route": "GET /k/{key}",
+    "requests": 14106,
+    "errors": 0,
+    "p50_ms": 0.278,
+    "p95_ms": 486.539,
+    "p99_ms": 1946.157
+   },
+   "history": [
+    {
+     "start": "2026-11-03T15:50:10Z",
+     "requests": 1933,
+     "errors": 0,
+     "p50_ms": 1.114,
+     "p95_ms": 19.922,
+     "p99_ms": 24.117
+    },
+    {
+     "start": "2026-11-03T15:50:20Z",
+     "requests": 2665,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 19.922,
+     "p99_ms": 22.02
+    },
+    {
+     "start": "2026-11-03T15:50:30Z",
+     "requests": 2667,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 19.922,
+     "p99_ms": 22.02
+    },
+    {
+     "start": "2026-11-03T15:50:40Z",
+     "requests": 2662,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 17.825,
+     "p99_ms": 22.02
+    },
+    {
+     "start": "2026-11-03T15:50:50Z",
+     "requests": 2666,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 17.825,
+     "p99_ms": 22.02
+    },
+    {
+     "start": "2026-11-03T15:51:00Z",
+     "requests": 2667,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 17.825,
+     "p99_ms": 19.922
+    },
+    {
+     "start": "2026-11-03T15:51:10Z",
+     "requests": 2668,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 17.825,
+     "p99_ms": 19.922
+    },
+    {
+     "start": "2026-11-03T15:51:20Z",
+     "requests": 2224,
+     "errors": 0,
+     "p50_ms": 1.376,
+     "p95_ms": 486.539,
+     "p99_ms": 1140.85
+    },
+    {
+     "start": "2026-11-03T15:51:30Z",
+     "requests": 2174,
+     "errors": 0,
+     "p50_ms": 1.114,
+     "p95_ms": 1140.85,
+     "p99_ms": 1543.503
+    },
+    {
+     "start": "2026-11-03T15:51:40Z",
+     "requests": 2139,
+     "errors": 0,
+     "p50_ms": 1.245,
+     "p95_ms": 905.969,
+     "p99_ms": 1409.286
+    },
+    {
+     "start": "2026-11-03T15:51:50Z",
+     "requests": 2053,
+     "errors": 0,
+     "p50_ms": 1.245,
+     "p95_ms": 1140.85,
+     "p99_ms": 2281.701
+    },
+    {
+     "start": "2026-11-03T15:52:00Z",
+     "requests": 1837,
+     "errors": 0,
+     "p50_ms": 1.245,
+     "p95_ms": 1140.85,
+     "p99_ms": 1543.503
+    },
+    {
+     "start": "2026-11-03T15:52:10Z",
+     "requests": 1930,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 1140.85,
+     "p99_ms": 1946.157
+    },
+    {
+     "start": "2026-11-03T15:52:20Z",
+     "requests": 1787,
+     "errors": 0,
+     "p50_ms": 1.507,
+     "p95_ms": 1140.85,
+     "p99_ms": 1811.939
+    },
+    {
+     "start": "2026-11-03T15:52:30Z",
+     "requests": 2405,
+     "errors": 0,
+     "p50_ms": 1.245,
+     "p95_ms": 1543.503,
+     "p99_ms": 1946.157
+    },
+    {
+     "start": "2026-11-03T15:52:40Z",
+     "requests": 2665,
+     "errors": 0,
+     "p50_ms": 0.237,
+     "p95_ms": 17.825,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:52:50Z",
+     "requests": 2668,
+     "errors": 0,
+     "p50_ms": 0.237,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:53:00Z",
+     "requests": 2667,
+     "errors": 0,
+     "p50_ms": 0.237,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:53:10Z",
+     "requests": 2664,
+     "errors": 0,
+     "p50_ms": 0.237,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:53:20Z",
+     "requests": 2666,
+     "errors": 0,
+     "p50_ms": 0.221,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:53:30Z",
+     "requests": 2667,
+     "errors": 0,
+     "p50_ms": 0.253,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:53:40Z",
+     "requests": 2666,
+     "errors": 0,
+     "p50_ms": 0.253,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:53:50Z",
+     "requests": 2667,
+     "errors": 0,
+     "p50_ms": 0.253,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:54:00Z",
+     "requests": 2666,
+     "errors": 0,
+     "p50_ms": 0.278,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:54:10Z",
+     "requests": 2668,
+     "errors": 0,
+     "p50_ms": 0.253,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:54:20Z",
+     "requests": 2630,
+     "errors": 0,
+     "p50_ms": 0.204,
+     "p95_ms": 16.252,
+     "p99_ms": 17.825
+    },
+    {
+     "start": "2026-11-03T15:54:30Z",
+     "requests": 1703,
+     "errors": 0,
+     "p50_ms": 1.638,
+     "p95_ms": 1543.503,
+     "p99_ms": 2818.572
+    },
+    {
+     "start": "2026-11-03T15:54:40Z",
+     "requests": 1692,
+     "errors": 0,
+     "p50_ms": 1.638,
+     "p95_ms": 1946.157,
+     "p99_ms": 2818.572
+    },
+    {
+     "start": "2026-11-03T15:54:50Z",
+     "requests": 80,
+     "errors": 0,
+     "p50_ms": 1.638,
+     "p95_ms": 104.857,
+     "p99_ms": 486.539
+    }
+   ]
+  }
+ ],
+ "rules": [
+  {
+   "name": "batch_backoff",
+   "knob": "batch_size",
+   "signal_name": "sched.p99",
+   "unit": "ms",
+   "state": "stopped",
+   "stalls": 0,
+   "signal": 738.197,
+   "limit": 5,
+   "warning": "batch_size doesn't spend cpu, which sched.p99 measures: this rule may not be able to help. If turning it up uses cpu, declare vis.Uses(vis.CPU) on the knob.",
+   "moves": "20..64",
+   "action": "step -25%",
+   "stopped": "its signal sched.p99 improved (1476 ms \u2192 738 ms) but GET /k/{key} p99 stayed over its 40 ms objective, no closer to it (1275 ms \u2192 1678 ms), after 2 steps in a row"
+  }
+ ],
+ "runtime": {
+  "over": "10.402s",
+  "sched_p50_ms": 0.983,
+  "sched_p99_ms": 1476.395,
+  "gc_cpu": 0.0046827366033840604,
+  "heap_ratio": 0,
+  "goroutines": 307,
+  "gomaxprocs": 2,
+  "cpu_limit": 0.25,
+  "cpu_used": 0.25066369011768597,
+  "throttled": 1,
+  "throttled_time": "22.695s"
+ },
+ "service": "cacheproxy",
+ "signals": [
+  {
+   "name": "hit_rate",
+   "value": 0.9349915206331261,
+   "about": "Share of lookups served from the cache, over the last closed 10 s bucket."
+  },
+  {
+   "name": "batch_wait_p99",
+   "value": 1001.561,
+   "unit": "ms",
+   "about": "How long cache misses waited for their origin batch to start, p99 over the last closed 10 s bucket."
+  },
+  {
+   "name": "response_kb",
+   "value": 3.333596876786735,
+   "unit": "KiB",
+   "about": "Average compressed response size, over the last closed 10 s bucket."
+  },
+  {
+   "name": "origin_keys_per_s",
+   "value": 11.7,
+   "unit": "keys/s",
+   "about": "Keys fetched from the origin per second, over the last closed 10 s bucket."
+  },
+  {
+   "name": "rejected_rps",
+   "value": 0,
+   "unit": "rps",
+   "about": "Requests per second refused by scan_limit, over the last 10 s."
+  },
+  {
+   "name": "tenant_rps.web",
+   "value": 159.1,
+   "unit": "rps",
+   "about": "Requests per second from tenant web (X-Tenant), over the last 10 s, admitted or not."
+  }
+ ],
+ "slo": {
+  "p99_ms": 40,
+  "route": "GET /k/{key}",
+  "warning": ""
+ },
+ "slos": [
+  {
+   "route": "GET /k/{key}",
+   "p99_ms": 40,
+   "now_p99_ms": 2818.572,
+   "minute_p99_ms": 1946.157,
+   "requests": 3475,
+   "met": false
+  }
+ ],
+ "started": "2026-11-03T15:50:11Z",
+ "stories": [
+  {
+   "id": "rule-1793721274544415483",
+   "kind": "rule",
+   "at": "2026-11-03T15:54:34.544415483Z",
+   "until": "2026-11-03T15:54:43.143559686Z",
+   "alert": true,
+   "who": "rule batch_backoff",
+   "title": "Rule batch_backoff moved batch_size from 64 items to 48 items, then vis undid it and stopped the rule: its steps didn't bring the SLO closer.",
+   "title_parts": [
+    {
+     "text": "Rule "
+    },
+    {
+     "text": "batch_backoff",
+     "kind": "rule"
+    },
+    {
+     "text": " moved "
+    },
+    {
+     "text": "batch_size",
+     "kind": "knob"
+    },
+    {
+     "text": " from "
+    },
+    {
+     "text": "64 items",
+     "kind": "value"
+    },
+    {
+     "text": " to "
+    },
+    {
+     "text": "48 items",
+     "kind": "value"
+    },
+    {
+     "text": ", then vis undid it and stopped the rule: its steps didn't bring the SLO closer."
+    }
+   ],
+   "body": "Its signal sched.p99 improved (1476 ms \u2192 738 ms) but GET /k/{key} p99 stayed over its 40 ms objective, no closer to it (1275 ms \u2192 1678 ms), after 2 steps in a row, so its lever is the wrong one for what is happening now. vis undid its change: batch_size is back to 64 items. The rule stays off until a person or an agent switches it back on.",
+   "knob": "batch_size",
+   "mark": "batch_size 48 items",
+   "why": "Its lever is the wrong one for what is happening now.",
+   "effects": [
+    {
+     "name": "sched.p99",
+     "from": 1476,
+     "to": 738,
+     "unit": "ms",
+     "worse": false
+    },
+    {
+     "name": "GET /k/{key} p99",
+     "from": 1275,
+     "to": 1678,
+     "unit": "ms",
+     "worse": true
+    }
+   ]
+  },
+  {
+   "id": "change-1793721209632354266",
+   "kind": "change",
+   "at": "2026-11-03T15:53:29.632354266Z",
+   "until": "2026-11-03T15:54:29.634923207Z",
+   "alert": false,
+   "who": "agent chaos",
+   "title": "Agent chaos set compress_level to 1.",
+   "title_parts": [
+    {
+     "text": "Agent "
+    },
+    {
+     "text": "chaos",
+     "kind": "actor"
+    },
+    {
+     "text": " set "
+    },
+    {
+     "text": "compress_level",
+     "kind": "knob"
+    },
+    {
+     "text": " to "
+    },
+    {
+     "text": "1",
+     "kind": "value"
+    },
+    {
+     "text": "."
+    }
+   ],
+   "body": "\u201crenewing cp-1 alone, for a minute\u201d It was 1. It ended after 1m: compress_level is back to 9.",
+   "knob": "compress_level",
+   "mark": "compress_level 1",
+   "why": "renewing cp-1 alone, for a minute"
+  },
+  {
+   "id": "change-1793721157847479416",
+   "kind": "change",
+   "at": "2026-11-03T15:52:37.847479416Z",
+   "until": "2026-11-03T15:52:37.847479416Z",
+   "alert": false,
+   "who": "agent chaos",
+   "title": "Agent chaos set compress_level to 1.",
+   "title_parts": [
+    {
+     "text": "Agent "
+    },
+    {
+     "text": "chaos",
+     "kind": "actor"
+    },
+    {
+     "text": " set "
+    },
+    {
+     "text": "compress_level",
+     "kind": "knob"
+    },
+    {
+     "text": " to "
+    },
+    {
+     "text": "1",
+     "kind": "value"
+    },
+    {
+     "text": "."
+    }
+   ],
+   "body": "\u201cCPU cut to a quarter core on every replica: lighter compression (rollout)\u201d It was 9. For 30m, then back to 9. After 30s: GET /k/{key} p99 1946 \u2192 18 ms, CPU 0.25 \u2192 0.09 cores, throttled 100% \u2192 0%. Meanwhile the rest of the fleet (cp-2 and cp-3): GET /k/{key} p99 1946 \u2192 18 ms. The rest were changed too meanwhile (cp-2: compress_level 9 \u2192 1 by agent:chaos), so the comparison says less. One member against 2, one window each: a comparison, not an inference. Read it with care, confounded: batch_size changed (20 \u2192 64) by lease.",
+   "knob": "compress_level",
+   "lease": 5,
+   "mark": "compress_level 1",
+   "why": "CPU cut to a quarter core on every replica: lighter compression (rollout)",
+   "effects": [
+    {
+     "name": "GET /k/{key} p99",
+     "from": 1946,
+     "to": 18,
+     "unit": "ms",
+     "worse": false
+    },
+    {
+     "name": "CPU",
+     "from": 0.25,
+     "to": 0.09,
+     "unit": "cores",
+     "worse": false
+    },
+    {
+     "name": "throttled",
+     "from": 100,
+     "to": 0,
+     "unit": "%",
+     "worse": false
+    }
+   ],
+   "after": "30s",
+   "confounded": [
+    "batch_size changed (20 \u2192 64) by lease"
+   ]
+  },
+  {
+   "id": "rule-1793721087140954353",
+   "kind": "rule",
+   "at": "2026-11-03T15:51:27.140954353Z",
+   "until": "2026-11-03T15:53:00.351157968Z",
+   "alert": false,
+   "who": "rule batch_backoff",
+   "title": "Rule batch_backoff moved batch_size from 64 items to 20 items, then stopped: its steps didn't help.",
+   "title_parts": [
+    {
+     "text": "Rule "
+    },
+    {
+     "text": "batch_backoff",
+     "kind": "rule"
+    },
+    {
+     "text": " moved "
+    },
+    {
+     "text": "batch_size",
+     "kind": "knob"
+    },
+    {
+     "text": " from "
+    },
+    {
+     "text": "64 items",
+     "kind": "value"
+    },
+    {
+     "text": " to "
+    },
+    {
+     "text": "20 items",
+     "kind": "value"
+    },
+    {
+     "text": ", then stopped: its steps didn't help."
+    }
+   ],
+   "body": "sched.p99 stayed at 1476 ms against its 5 ms limit. Its change ran out 1m after its last step: batch_size is back to 64 items. Its condition cleared 2m5s ago. Its first step: after 30s: GET /k/{key} p99 285 \u2192 1812 ms, CPU 0.39 \u2192 0.25 cores, throttled 23% \u2192 100%. Meanwhile the rest of the fleet (cp-2 and cp-3; cp-2 from its gossip, too busy to answer): GET /k/{key} p99 386 \u2192 2819 ms. The rest moved too, so something they share (load, a dependency) may have moved this member as well. One member against 2, one window each: a comparison, not an inference. Read it with care, confounded: the environment changed (cpu_limit_changed 2 \u2192 0.25); batch_size changed (48 \u2192 36) by rule:batch_backoff; batch_size changed (36 \u2192 27) by rule:batch_backoff.",
+   "knob": "batch_size",
+   "mark": "batch_size 20 items",
+   "why": "sched.p99 stayed at 1476 ms against its 5 ms limit.",
+   "effects": [
+    {
+     "name": "GET /k/{key} p99",
+     "from": 285,
+     "to": 1812,
+     "unit": "ms",
+     "worse": true
+    },
+    {
+     "name": "CPU",
+     "from": 0.39,
+     "to": 0.25,
+     "unit": "cores",
+     "worse": false
+    },
+    {
+     "name": "throttled",
+     "from": 23,
+     "to": 100,
+     "unit": "%",
+     "worse": true
+    }
+   ],
+   "after": "30s",
+   "confounded": [
+    "the environment changed (cpu_limit_changed 2 \u2192 0.25)",
+    "batch_size changed (48 \u2192 36) by rule:batch_backoff",
+    "batch_size changed (36 \u2192 27) by rule:batch_backoff"
+   ]
+  },
+  {
+   "id": "environment-1793721083142805129",
+   "kind": "environment",
+   "at": "2026-11-03T15:51:23.142805129Z",
+   "until": "2026-11-03T15:51:23.142805129Z",
+   "alert": true,
+   "who": "the environment",
+   "title": "The container's CPU limit changed from 2 to 0.25 cores.",
+   "body": "Nobody changed it through vis: an orchestrator or a person resized the container.",
+   "mark": "cpu 0.25"
+  }
+ ],
+ "user": "human:assaf",
+ "warnings": []
+}

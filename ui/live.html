@@ -1,0 +1,2007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+<title>vis</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f7f7f6;
+  --ink: #111112;
+  --ink-2: #4a4a4f;
+  --ink-3: #8a8a90;
+  --ink-4: #c4c4c8;
+  --rule: #b9b9be;
+  --hair: #e4e4e1;
+  --red: #d93036;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Geist Mono", Menlo, monospace;
+  --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --surface: #fdfdfc;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a0a0a; --ink: #ececec; --ink-2: #b0b0b5; --ink-3: #75757b; --ink-4: #3b3b40; --rule: #45454a; --hair: #1d1d20;
+    --red: #ff5a5f; --surface: #111113;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0a0a; --ink: #ececec; --ink-2: #b0b0b5; --ink-3: #75757b; --ink-4: #3b3b40; --rule: #45454a; --hair: #1d1d20;
+  --red: #ff5a5f; --surface: #111113;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { overscroll-behavior: none; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; min-height: 100dvh; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+/* focus: for keyboard users only, a thin dotted ring in the page's grey; nothing on what the page focuses for
+   itself (a sheet's title, the panel's body: tabindex=-1) */
+:focus-visible { outline: 1px dotted var(--ink-3); outline-offset: 3px; }
+[tabindex="-1"]:focus, [tabindex="-1"]:focus-visible { outline: none; }
+/* keyboard hints: shown only once someone is using the keyboard */
+.kbd { display: none; font: 11px/1 var(--mono); padding: 3px 5px; border: 1px solid currentColor; opacity: .55; margin-left: 8px; letter-spacing: 0; }
+body.keys-on .kbd { display: inline-block; }
+.label .k { display: none; } body.keys-on .label .k { display: inline; color: var(--ink-2); }
+.keys-hint { display: none; } @media (pointer: fine) { .keys-hint { display: inline; } }
+.strip:focus-visible { outline: 1px dotted var(--ink-3); outline-offset: 6px; }
+.keys { display: grid; gap: 18px; margin-top: 16px; }
+.keys h4 { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin: 0 0 6px; font-weight: 400; }
+.keys dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 14px; }
+.keys dt { font: 12.5px var(--mono); } .keys dt span { border: 1px solid var(--rule); padding: 1px 6px; margin-right: 4px; }
+.keys dd { margin: 0; color: var(--ink-2); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- page frame (borrowed from mdxcn: dotted rules, + at the joints) ---------- */
+.page { width: min(1120px, 100%); margin: 0 auto; border-left: 1px dotted var(--rule); border-right: 1px dotted var(--rule); min-height: 100dvh; position: relative; }
+header {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px;
+  padding: calc(14px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 14px max(24px, env(safe-area-inset-left));
+  background: var(--bg); border-bottom: 1px dotted var(--rule);
+}
+header::before, header::after { content: "+"; position: absolute; bottom: -9px; font: 12px/1 var(--mono); color: var(--ink-3); background: var(--bg); }
+header::before { left: -4px; } header::after { right: -4px; }
+.svc { font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+.svc .mark { width: 14px; height: 14px; display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 1px; }
+.svc .mark i { background: var(--ink); } .svc .mark i:nth-child(1) { height: 5px; } .svc .mark i:nth-child(2) { height: 9px; } .svc .mark i:nth-child(3) { height: 14px; }
+.svc small { font: 12px var(--mono); color: var(--ink-3); }
+.grow { flex: 1; }
+.freeze { min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; transition: background .2s, color .2s, border-color .2s; }
+.freeze:hover { border-color: var(--ink-2); color: var(--ink); }
+.freeze .sq { width: 8px; height: 8px; border: 1px solid currentColor; }
+body.frozen .freeze { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+body.frozen .freeze .sq { background: currentColor; }
+.freezebar { display: none; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 28px; background: var(--ink); color: var(--bg); font: 13px var(--mono); }
+body.frozen .freezebar { display: flex; }
+.freezebar b { font-weight: 600; letter-spacing: .06em; }
+.freezebar input { flex: 1; min-width: 180px; background: transparent; border: 0; border-bottom: 1px dotted currentColor; color: inherit; font: inherit; padding: 4px 0; outline: none; }
+.freezebar input::placeholder { color: inherit; opacity: .6; }
+/* viewing another member through this page: say so, and what acting here means */
+.viewbar { display: none; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 28px; border-bottom: 1px solid var(--rule); background: var(--paper, var(--bg)); font: 13px var(--mono); color: var(--ink-2); }
+body.viewing .viewbar { display: flex; }
+.viewbar b { color: var(--ink); font-weight: 600; }
+.viewbar button { margin-left: auto; text-decoration: underline; text-underline-offset: 3px; font: inherit; color: var(--ink); }
+.freezebar button { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 600px) { .freezebar { padding: 10px 16px; } }
+
+/* ---------- layout ---------- */
+main { padding: 8px max(24px, env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); }
+@media (min-width: 980px) {
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "center side" "today side"; column-gap: 48px; align-items: start; }
+  .center { grid-area: center; } .todaycol { grid-area: today; } aside { grid-area: side; grid-row: 1 / span 2; position: sticky; top: 92px; }
+}
+/* wide: the day beside the chart, so a story and its window on the strip are both in view */
+@media (min-width: 1320px) {
+  .page { width: min(1560px, 100%); }
+  main { grid-template-columns: 330px minmax(0, 1fr) 320px; grid-template-areas: "today center side"; column-gap: 40px; }
+  aside { grid-row: auto; }
+  .todaycol { position: sticky; top: 64px; max-height: calc(100dvh - 72px); overflow: auto; overscroll-behavior: contain; padding: 0 6px 24px; margin: 0 -6px; scrollbar-width: thin; }
+  .todaycol .story h3 { font-size: 15px; }
+}
+
+/* ---------- frames ---------- */
+.frame { position: relative; border: 1px dotted var(--rule); margin-top: 36px; }
+.frame > .c { position: absolute; font: 12px/1 var(--mono); color: var(--ink-3); pointer-events: none; }
+.frame > .c.tl { top: -7px; left: -4px; } .frame > .c.tr { top: -7px; right: -4px; } .frame > .c.bl { bottom: -6px; left: -4px; } .frame > .c.br { bottom: -6px; right: -4px; }
+.frame > .label { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--bg); padding: 0 8px; font: 12px/18px var(--mono); letter-spacing: .06em; color: var(--ink-2); white-space: nowrap; }
+.frame > .inner { padding: 22px 20px 18px; }
+
+/* ---------- hero ---------- */
+.hero { padding-top: 36px; }
+#headline { font: 600 clamp(34px, 7vw, 54px)/1.04 var(--display); letter-spacing: -0.04em; margin: 0; }
+#headline.alert { color: var(--red); }
+#headline.two { font-size: clamp(28px, 5.6vw, 44px); }
+#subline { font: 14.5px/1.5 var(--mono); color: var(--ink-2); margin: 12px 0 0; min-height: 22px; }
+
+/* ---------- tick strip ---------- */
+.strip { position: relative; height: clamp(150px, 20vw, 210px); touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: crosshair; }
+.strip svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.strip .tick { stroke: var(--ink-4); stroke-width: 1; shape-rendering: crispEdges; }
+.strip .tick.hot { stroke: var(--red); stroke-width: 2; } /* weight, not only hue: thin lines lose their color first */
+.strip .tick.ev { }
+.strip .tick.dep { stroke-dasharray: 2 2; }
+.strip .lbl.dep { font: 11.5px var(--mono); font-style: normal; }
+.strip .tick.ev.hot { stroke: var(--red); } /* a landmark inside a breach stays red */
+.strip .tick, .strip .lbl { transition: opacity .15s; }
+.strip .band { fill: var(--ink); opacity: 0; transition: opacity .15s; }
+.strip.hl .band { opacity: .07; }
+.strip.hl .tick:not(.in), .strip.hl .lbl:not(.in) { opacity: .25; }
+.strip .slo { stroke: var(--red); stroke-width: 1.25; stroke-dasharray: 6 3; }
+.strip .lbl { font: 500 12px var(--sans); fill: var(--ink-2); letter-spacing: -0.005em; }
+.strip .leader { stroke: var(--ink-3); stroke-width: 1; shape-rendering: crispEdges; }
+.strip .grid { stroke: var(--hair); stroke-width: 1; shape-rendering: crispEdges; }
+.strip .yl { font: 11.5px var(--sans); fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+.strip .over { fill: var(--red); opacity: .03; }
+/* Memory as tiles, as the fleet's dock is: shared dotted edges, "+" at the corners, the title set into the rule. */
+.mtiles { margin-top: 36px; padding: 0; } /* as far from the latency frame as frames are from each other */
+@media (min-width: 761px) { .mtiles { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } }
+.mtiles .tile { padding: 24px 20px 18px; background: var(--surface); } /* the hero's surface, as the latency frame has */
+.mtiles .fig { margin-bottom: 6px; }
+.mtiles .tile:first-child { display: flex; flex-direction: column; } /* the chart takes the height the heap's tile sets */
+.strip.mem { flex: 1; height: auto; min-height: 110px; cursor: default; }
+.strip.mem .fc { stroke: var(--ink-2); stroke-width: 1.25; stroke-dasharray: 1 3; stroke-linecap: round; fill: none; }
+.strip.mem .fc.hot { stroke: var(--red); }
+.maxis { position: relative; height: 14px; margin-top: 8px; font: 11.5px var(--sans); font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.maxis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.maxis span:first-child { transform: none; }
+/* The live heap as a waffle (after mdxcn's): the limit in 100 cells, in ink weights, not hues. */
+.waffle { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; max-width: 190px; margin: 6px 0 14px; }
+/* Ink levels, no white fills; red only for the wrong part, as the latency ticks over the SLO are: here what of the
+   live heap grew in the last 10 minutes. */
+.waffle i { aspect-ratio: 1; border: 1px solid var(--hair); }
+.waffle i.live { background: var(--ink-3); border-color: var(--ink-3); }
+.waffle i.grew { background: color-mix(in srgb, var(--red) 30%, transparent); border-color: var(--red); }
+.waffle i.goal { background: var(--ink-4); border-color: var(--ink-4); }
+.waffle i.rest { background: repeating-linear-gradient(135deg, var(--ink-4) 0 1px, transparent 1px 3px); border-color: var(--ink-4); }
+.wkey { display: grid; grid-template-columns: 12px auto 1fr; gap: 5px 8px; align-items: center; margin: 0; font: 12.5px var(--sans); color: var(--ink-2); }
+.wkey i { width: 10px; height: 10px; border: 1px solid var(--ink-4); }
+.wkey i { border-color: var(--hair); }
+.wkey i.live { background: var(--ink-3); border-color: var(--ink-3); } .wkey i.goal { background: var(--ink-4); border-color: var(--ink-4); }
+.wkey i.grew { background: color-mix(in srgb, var(--red) 30%, transparent); border-color: var(--red); }
+.wkey i.rest { background: repeating-linear-gradient(135deg, var(--ink-4) 0 1px, transparent 1px 3px); border-color: var(--ink-4); }
+.wkey dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.wkey .note { grid-column: 1 / -1; color: var(--ink-3); margin-top: 4px; }
+:root[data-theme="dark"] .strip .over { opacity: .035; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .strip .over { opacity: .035; } }
+.strip .grid.minor { opacity: .55; }
+.strip .yl.objective { fill: var(--red); font-weight: 500; }
+.strip .now { stroke: var(--ink); stroke-width: 1.5; }
+.strip .hair { stroke: var(--ink); stroke-width: 1; opacity: 0; }
+.strip .readout { position: absolute; top: calc(100% + 6px); font: 12px var(--sans); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--bg); padding: 0 4px; white-space: nowrap; transform: translateX(-50%); opacity: 0; transition: opacity .15s; pointer-events: none; }
+.strip.scrub .readout { opacity: 1; }
+.strip.scrub + .axis { opacity: 0; }
+.axis { display: flex; justify-content: space-between; font: 11.5px var(--sans); font-variant-numeric: tabular-nums; color: var(--ink-3); margin-top: 10px; padding-right: 52px; }
+
+/* ---------- stories ---------- */
+.stories { display: grid; }
+.story { padding: 16px 0; transition: opacity .15s; }
+.stories.hl .story:not(.on) { opacity: .4 !important; } /* beats the entry animation's inline opacity */
+.story.on .when .dot { background: var(--ink); }
+.story.alert.on .when .dot { background: var(--red); outline: 1px solid var(--red); outline-offset: 2px; }
+.story:focus-visible { outline: 1px dotted var(--ink-3); outline-offset: 4px; }
+.story + .story { border-top: 1px dotted var(--rule); }
+.story:first-child { padding-top: 2px; } .story:last-child { padding-bottom: 0; }
+.story .when { font: 12px/18px var(--mono); color: var(--ink-3); display: flex; gap: 8px; align-items: flex-start; }
+.story .when .wt { flex: 1; min-width: 0; } /* wraps between words, never inside one */
+.story .when .wt > span { white-space: nowrap; }
+.story .when .dot { flex: none; width: 6px; height: 6px; margin-top: 6px; background: var(--ink-4); }
+.story.alert .when .dot { background: var(--red); }
+.story h3 { font: 600 16.5px/1.35 var(--sans); margin: 6px 0 4px; letter-spacing: -0.01em; }
+/* A title's parts: the words between a step quieter; who acted (or which rule) underlined
+   dotted, as the page rules its frames; the knob as code; its value with even digits. */
+.story h3 .t-w { color: var(--ink-2); font-weight: 500; }
+.story h3 .t-actor, .story h3 .t-rule { text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.story h3 .t-knob { font: 500 0.93em var(--mono); letter-spacing: 0; }
+.story h3 .t-value { font-variant-numeric: tabular-nums; }
+.story p { margin: 0; color: var(--ink-2); }
+.story .actions { display: flex; gap: 8px; margin-top: 14px; }
+.btn { min-height: 38px; padding: 0 14px; border: 1px solid var(--ink); font-weight: 500; font-size: 14px; transition: transform .16s var(--ease-out), background .2s, color .2s; }
+.btn.ink { background: var(--hair); color: var(--ink); border-color: var(--ink-2); } /* the main action: an ink edge, not a block of ink */
+@media (hover: hover) and (pointer: fine) { .btn.ink:not(:disabled):hover { border-color: var(--ink); } }
+.btn.quiet { border-color: transparent; color: var(--ink-2); padding: 0 8px; }
+@media (hover: hover) and (pointer: fine) { .btn:not(.ink):not(:disabled):hover { background: var(--hair); } }
+.btn:disabled { opacity: .35; cursor: default; }
+.pressed { transform: scale(.97); }
+.empty { color: var(--ink-3); font-size: 14px; }
+
+/* ---------- knobs list ---------- */
+.list { display: block; }
+.row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 13px 20px; min-height: 58px; transition: background .15s; }
+.row + .row { border-top: 1px dotted var(--rule); }
+@media (hover: hover) and (pointer: fine) { .row:hover { background: var(--hair); } }
+.row.pressed { transform: none; background: var(--hair); }
+.row .name { font-weight: 550; }
+.row .meta { font: 11.5px var(--mono); color: var(--ink-3); }
+.row .meta.live { color: var(--ink-2); }
+.row .val { margin-left: auto; font: 400 18px/1 var(--mono); letter-spacing: -0.02em; }
+.row .val small { font: 11.5px var(--mono); color: var(--ink-3); margin-left: 4px; letter-spacing: 0; }
+.row .chev { color: var(--ink-3); font: 13px var(--mono); margin-left: 2px; }
+.fleet { display: flex; align-items: center; gap: 14px; }
+.dots { display: flex; gap: 5px; }
+.dots i { width: 9px; height: 9px; border: 1px solid var(--ink-3); transition: background .3s, border-color .3s; }
+.dots i.hot { background: var(--red); border-color: var(--red); }
+.dots i.me { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--ink-3); } /* the member this page is */
+.dots i.gone { border-style: dashed; opacity: .55; } /* suspect or dead: not heard from */
+.demo { margin-top: 28px; font: 12px var(--mono); color: var(--ink-3); }
+.demo button { text-decoration: underline; text-underline-offset: 3px; color: var(--ink-2); }
+
+/* ---------- sheet ---------- */
+.scrim { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, var(--bg) 70%, transparent); opacity: 0; pointer-events: none; transition: opacity .3s var(--ease-out); }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; margin: 0 auto; width: min(480px, 100%);
+  background: var(--bg); border: 1px solid var(--rule); border-bottom: 0; border-radius: 12px 12px 0 0;
+  padding: 6px 24px calc(22px + env(safe-area-inset-bottom)); max-height: 92dvh; overflow: auto; overscroll-behavior: contain;
+  transform: translateY(110%);
+}
+@media (min-width: 700px) { .sheet { bottom: auto; top: 50%; border-radius: 0; border-bottom: 1px solid var(--rule); padding-bottom: 24px; transform: translateY(-50%) scale(.98); opacity: 0; pointer-events: none; } .sheet.on { pointer-events: auto; } }
+@media (min-width: 700px) { .sheet.wide { width: min(680px, 100%); } }
+/* A sheet that scrolls shows its scrollbar always, not only while scrolling: Chrome and Safari honour the
+   pseudo-elements only when scrollbar-width is unset, so that is kept for the rest. */
+.sheet::-webkit-scrollbar { width: 8px; } .sheet::-webkit-scrollbar-thumb { background: var(--ink-4); border-radius: 4px; }
+@supports not selector(::-webkit-scrollbar) { .sheet { scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; } }
+.sheet.more::after { content: ""; position: sticky; display: block; bottom: -24px; height: 36px; margin: -36px -24px -24px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--bg)); }
+/* the instance sheet: names and values in two columns; what each means only when asked */
+.facts .see { font: inherit; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.isheet .sh { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin: 18px 0 2px; } .isheet .sh span { letter-spacing: 0; }
+/* The open dock: one grid, so every row shares its edges: a glyph gutter (! sick, × silent) the eye runs down,
+   the member's name, then what is wrong with it; the rest below in the same columns, quieter. One column of
+   reading, left-aligned with the strip's text, never spread across a wide screen. */
+.fs { font-family: var(--sans); }
+/* Tiles: the areas share their edges (each draws its frame and overlaps the next by 1 px, so a shared edge is one
+   dotted line), the title set into the top rule, "+" at the corners: the page's own frame, tiled. */
+.fsw { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; padding: 14px 4px 4px; }
+@media (min-width: 1100px) { .fsw:not(.one) { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); } }
+.fsw .tile { position: relative; border: 1px dotted var(--rule); margin: 0 -1px -1px 0; padding: 30px 26px 22px; min-width: 0; }
+.fsw .tile > .c { position: absolute; font: 12px/1 var(--mono); color: var(--ink-3); background: var(--bg); pointer-events: none; z-index: 1; }
+.fsw .tile > .c.tl { top: -7px; left: -4px; } .fsw .tile > .c.tr { top: -7px; right: -4px; } .fsw .tile > .c.bl { bottom: -6px; left: -4px; } .fsw .tile > .c.br { bottom: -6px; right: -4px; }
+.fsw .tile > .label { position: absolute; top: -10px; left: 24px; background: var(--bg); padding: 0 8px; font: 600 12.5px/18px var(--mono); letter-spacing: .08em; color: var(--ink); white-space: nowrap; z-index: 1; }
+.fsw .tile > .label span { font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+.fsw .tile.hot > .label { color: var(--red); } /* what needs attention: the one red title */
+@media (min-width: 761px) { /* beside what needs attention, a healthy one's last change matters least */
+  .fsw .tile.rest .tbh, .fsw .tile.rest .tbr { grid-template-columns: 60px 100px 72px minmax(0, 1fr); }
+  .fsw .tile.rest .tbh span:nth-child(5), .fsw .tile.rest .tbr span:nth-child(5) { display: none; }
+}
+.fsg { display: grid; grid-template-columns: 16px 84px minmax(0, 1fr); column-gap: 16px; align-items: baseline; }
+.fsg .g { font: 600 16px var(--mono); font-style: normal; color: var(--red); text-align: center; }
+.fsg .nm { font: 500 16px var(--mono); display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.fsg .nm small { font: 12px var(--sans); color: var(--ink-3); }
+.fsg .n { font: inherit; padding: 0; text-align: left; color: var(--ink); text-decoration: underline dotted var(--ink-4); text-underline-offset: 4px; }
+.fsg .c { min-width: 0; padding-bottom: 28px; }
+.fsg > .c:last-child { padding-bottom: 0; }
+.fsg .vd { margin: 0 0 10px; font-size: 17.5px; line-height: 1.4; color: var(--ink); display: flex; gap: 14px; align-items: baseline; }
+.fsg .act { font: 12.5px var(--sans); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.fsg .act.sure { color: var(--red); }
+.fsg .sg { display: grid; grid-template-columns: 170px minmax(76px, max-content) minmax(0, 1fr); column-gap: 22px; align-items: baseline; padding: 5px 0; }
+.fsg .sg .v { white-space: nowrap; } /* "0.25 cores" on one line */
+.fsg .sg code { font: 14px var(--mono); color: var(--ink-3); }
+.fsg .sg .v { font: 500 17px var(--sans); font-variant-numeric: tabular-nums; color: var(--red); text-align: right; }
+.fsg .sg .v s { color: var(--ink-3); text-decoration-color: var(--ink-3); }
+.fsg .sg .ref { font-size: 14px; color: var(--ink-3); }
+.fsg .aside { margin: 4px 0 0; font-size: 13px; color: var(--ink-3); }
+.fsg .ln { margin: 0 0 6px; font-size: 15px; line-height: 1.45; color: var(--ink-2); } .fsg .ln.bad, .fsg .bad { color: var(--red); }
+.fsg .lead { margin: 0 0 8px; font-size: 17px; line-height: 1.45; color: var(--ink); } .fsg .lead code { font: 15.5px var(--mono); }
+.fsg .n.plain { text-decoration: none; }
+
+.fsg .tbh, .fsg .tbr { display: grid; grid-template-columns: 60px 100px 72px minmax(150px, 1fr) 64px; column-gap: 20px; padding-bottom: 12px; }
+.fsg .tbh span { font: 11.5px var(--mono); letter-spacing: .06em; color: var(--ink-4); }
+.fsg .tbr span { font: 16px var(--sans); font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }
+.fsg .tbh span:nth-child(-n+3), .fsg .tbr span:nth-child(-n+3) { text-align: right; }
+.fsg .tbr .h { white-space: normal; font-size: 14px; }
+.fsg .c.rr { grid-template-columns: 150px 130px; } .fsg .c.rr .nm-miss { grid-column: 1 / -1; font-size: 14px; color: var(--ink-3); white-space: normal; } /* the last rollout's rows: p99 and throttling, before and after */
+.fsg small { font-size: 12.5px; color: var(--ink-3); }
+@media (max-width: 760px) { /* a phone: the gutter, the name, then everything stacks under the name's column */
+  .fsg { grid-template-columns: 14px minmax(0, 1fr); }
+  .fsg .nm { grid-column: 2; } .fsg .c { grid-column: 2; }
+  .fsg .sg { grid-template-columns: minmax(0, 1fr) auto; } .fsg .sg .ref { grid-column: 1 / -1; margin-top: -2px; }
+  .fsg .tbh { display: none; } .fsg .tbr { grid-template-columns: auto auto minmax(0, 1fr); } .fsg .tbr span:nth-child(3), .fsg .tbr span:nth-child(5) { display: none; }
+}
+.isheet .tiles { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+@media (max-width: 560px) { .isheet .tiles { grid-template-columns: 1fr; } }
+.isheet .tl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; padding: 8px 0; border-top: 1px dotted var(--rule); }
+.isheet .tl code { font: 500 13px var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+.isheet .tl .v { font: 500 15px var(--sans); font-variant-numeric: tabular-nums; text-align: right; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.isheet .tl .v small { font: 12.5px var(--sans); color: var(--ink-3); margin-left: 4px; }
+.isheet .tl .lv em { font-style: normal; color: var(--ink-3); margin-right: 3px; font-size: 13px; }
+.isheet .tl.bad .v, .isheet .tl.bad code { color: var(--red); }
+.isheet .tl .about { display: none; grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+.isheet.explain .tl .about { display: block; }
+.isheet .notes[hidden] { display: none; }
+.isheet .foot { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; }
+.isheet .foot button { font: 13px var(--mono); color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+.grab { height: 20px; display: grid; place-items: center; touch-action: none; cursor: grab; }
+.grab::before { content: ""; width: 32px; height: 4px; background: var(--ink-4); }
+@media (min-width: 700px) { .grab { display: none; } }
+.sheet h3 { font: 600 20px/1.2 var(--sans); margin: 10px 0 2px; letter-spacing: -0.015em; }
+.sheet .desc { color: var(--ink-3); font-size: 14px; }
+
+/* ---------- the dock: the fleet as a frame at the bottom of the page ----------
+   Frame idiom ported from mdxcn (https://www.mdxcn.dev): the rule is a repeating gradient (2 px dash, 5 px gap),
+   "+" where it meets the page's side rails, the title set into the rule in caps. mdxcn is MIT licensed:
+   Copyright (c) mdxcn contributors. Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal in the Software without
+   restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute,
+   sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do
+   so, subject to the following conditions: The above copyright notice and this permission notice shall be
+   included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT
+   WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+   The strip is the FLEET fact, always there: one tap or a drag opens the panel; its state is a glyph ("!" before
+   the number, "×" for a member not heard from) and the number's ink, and the frame's title turns red while the
+   fleet is over its objective. Open, it is two thirds of the window over the page, which dims and blurs and
+   takes no input; a splitter sets the height (remembered). A member's sheet opens in its place, Esc the way
+   back. On a phone it is a sheet with three detents. */
+.dock { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; height: var(--dock-h, 44px); background: var(--bg); flex-direction: column; transition: height .25s var(--ease-out); font: 14px/21px var(--mono); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+body.docked .dock { display: flex; }
+.dockscrim { position: fixed; left: 0; right: 0; top: 0; bottom: var(--dock-h, 44px); z-index: 29; background: var(--bg); opacity: 0; pointer-events: none; transition: opacity .25s var(--ease-out), bottom .25s var(--ease-out); }
+body.docked.dockopen .dockscrim { opacity: .82; pointer-events: auto; cursor: pointer; }
+@supports (backdrop-filter: blur(1px)) { .dockscrim { background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(0px) grayscale(0); -webkit-backdrop-filter: blur(0px) grayscale(0); transition: opacity .25s var(--ease-out), backdrop-filter .25s var(--ease-out), bottom .25s var(--ease-out); }
+  body.docked.dockopen .dockscrim { opacity: 1; backdrop-filter: blur(5px) grayscale(.6); -webkit-backdrop-filter: blur(5px) grayscale(.6); } } /* the eye goes to the open panel; a click on the page closes it */
+@media (prefers-reduced-motion: reduce) { .dockscrim { transition: none; } }
+.dock.dragging, body.dragging, body.still .dock, body.still .dockscrim { transition: none !important; }
+.dock::before { content: ""; position: absolute; left: 0; right: 0; top: -32px; height: 32px; background: linear-gradient(to bottom, transparent, var(--bg)); pointer-events: none; } /* the page fades out above the edge */
+.dock { --page-w: 1120px; } @media (min-width: 1320px) { .dock { --page-w: 1560px; } }
+.dock .rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: repeating-linear-gradient(90deg, var(--rule) 0 2px, transparent 2px 7px); }
+.dock .rule .c { position: absolute; top: -6px; font: 12px/1 var(--mono); letter-spacing: 0; color: var(--ink-3); background: var(--bg); }
+.dock .rule .c.l { left: max(-4px, calc((100% - var(--page-w)) / 2 - 4px)); } .dock .rule .c.r { right: max(-4px, calc((100% - var(--page-w)) / 2 - 4px)); }
+.dock .rule .title { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--bg); padding: 0 8px; font: 12px/18px var(--mono); letter-spacing: .06em; color: var(--ink-3); white-space: nowrap; }
+.dock.over .rule .title { color: var(--red); } /* the fleet is over its objective */
+.dock .split { flex: none; position: relative; z-index: 1; height: 9px; margin: -5px 0 -4px; cursor: row-resize; touch-action: none; }
+.dock .split:focus-visible { outline: none; box-shadow: inset 0 2px var(--ink-3); }
+/* The strip's text starts where the page's does, at any window width. */
+.dock .strip, .dock .body { padding-left: max(24px, calc((100% - var(--page-w)) / 2 + 24px)); padding-right: max(24px, calc((100% - var(--page-w)) / 2 + 24px)); }
+.dock .strip { flex: none; position: relative; display: flex; align-items: stretch; gap: 24px; height: 44px; color: var(--ink-2); cursor: default; touch-action: auto; } /* not the chart's .strip */
+.dock .fact { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; text-align: left; font: inherit; color: inherit; white-space: nowrap; touch-action: none; }
+.dock .fact:focus, .dock .fact:focus-visible { outline: none; } /* never a box: the strip is the panel's edge */
+.dock .fact:focus-visible .txt { text-decoration: underline dotted var(--ink-3); text-underline-offset: 5px; }
+.dock .fact { cursor: pointer; } @media (hover: hover) and (pointer: fine) { .dock .fact:hover .txt { color: var(--ink); } }
+.dock .fact .marks { letter-spacing: .12em; color: var(--ink-3); }
+.dock .fact .marks .b { color: var(--ink); } /* ■ stands out, × not heard from */
+.dock .fact .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dock .fact .bang, .dock .fact .num { font-weight: 600; color: var(--ink); }
+.dock .fact .num.hot { color: var(--red); } /* the only red: the fleet over its objective */
+.dock .body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-top: 18px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+.dock .body.enter > * { animation: fadeup .22s var(--ease-out); } /* once, when the panel opens; never on a live refresh */
+@keyframes fadeup { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dock .body.enter > * { animation: none; } }
+body.still .dock .body.enter > * { animation: none; }
+.dock.peek .body { visibility: hidden; }
+.dock .body button:focus-visible { outline: none; text-decoration: underline; text-decoration-style: solid; text-underline-offset: 4px; }
+.dock .body::-webkit-scrollbar { width: 8px; } .dock .body::-webkit-scrollbar-thumb { background: var(--ink-4); border-radius: 4px; }
+@supports not selector(::-webkit-scrollbar) { .dock .body { scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; } }
+.dock .isheet h3 { margin-top: 2px; } .dock .isheet .tiles { grid-template-columns: repeat(2, minmax(0, 440px)); }
+body.docked .toast { bottom: calc(var(--dock-h, 44px) + 20px); }
+@media (min-width: 700px) {
+  body.docked { padding-bottom: 68px; } /* the strip's height and some air: the open panel lies over the page, it doesn't reflow it */
+}
+@media (min-width: 1320px) { body.docked .todaycol { max-height: calc(100dvh - 72px - 44px); } }
+@media (max-width: 699px) {
+  body.docked { padding-bottom: 60px; }
+  .dock { border: 1px solid var(--rule); border-bottom: 0; border-radius: 12px 12px 0 0; }
+  .dock .rule, .dock .split { display: none; }
+  .dock .strip { height: 52px; padding: 8px 16px 0; gap: 10px; }
+  .dock .strip::before { content: ""; position: absolute; top: 6px; left: 50%; width: 32px; height: 4px; margin-left: -16px; background: var(--ink-4); }
+  .dock .fact { gap: 8px; font-size: 12px; } .dock .fact .marks { display: none; } /* the sentence names them; room for it */
+  .dock .body { padding: 8px 16px calc(20px + env(safe-area-inset-bottom)); }
+}
+
+/* encoder */
+.encoder { position: relative; width: 256px; height: 256px; margin: 10px auto 0; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+.encoder.turning { cursor: grabbing; }
+.encoder svg { width: 100%; height: 100%; overflow: visible; }
+.encoder .t { stroke: var(--ink-4); stroke-width: 1.5; }
+.encoder .t.on { stroke: var(--ink); }
+.encoder .t.def { stroke: var(--ink-2); }
+.encoder .cap { fill: none; stroke: var(--rule); stroke-width: 1; stroke-dasharray: 1 3; }
+.encoder .needle { stroke: var(--ink); stroke-width: 2; }
+.encoder .optl { font: 12px var(--mono); fill: var(--ink-3); }
+.encoder .optl.on { fill: var(--ink); }
+.encoder .readout { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; text-align: center; }
+.encoder .big { font: 400 46px/1 var(--mono); letter-spacing: -0.04em; }
+.encoder .unit { font: 12px var(--mono); color: var(--ink-3); margin-top: 6px; }
+.encoder .was { font: 12px var(--mono); color: var(--ink-3); height: 18px; margin-top: 2px; }
+.who { text-align: center; color: var(--ink-2); font-size: 14px; margin: 2px 0 18px; min-height: 21px; }
+/* who holds it: the layers in precedence order, marked like the row's .stk */
+.stack { border-top: 1px dotted var(--rule); padding-top: 14px; margin: 18px 0 16px; }
+.stack .h { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin-bottom: 6px; }
+.stack .sr { display: grid; grid-template-columns: 7px 64px 1fr; gap: 10px; align-items: center; font-size: 14px; line-height: 26px; color: var(--ink-4); }
+.stack .sr i { width: 5px; height: 5px; border: 1px solid var(--ink-4); }
+.stack .sr .l { font: 12.5px var(--mono); color: var(--ink-3); }
+.stack .sr.has { color: var(--ink-2); }
+.stack .sr.has i { border-color: var(--ink-3); }
+.stack .sr.win { color: var(--ink); font-weight: 550; }
+.stack .sr.win i { background: var(--ink); border-color: var(--ink); }
+.stack .sr.win .l { color: var(--ink); }
+.history { border-top: 1px dotted var(--rule); padding-top: 14px; }
+.history .h { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin-bottom: 8px; }
+.history ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.history li { display: flex; gap: 12px; }
+.history li span:first-child { color: var(--ink-3); min-width: 72px; font: 12.5px/21px var(--mono); }
+.history li b { font-weight: 550; }
+.why { border: 1px dotted var(--rule); padding: 12px 14px; font-size: 14px; color: var(--ink-2); margin: 14px 0 4px; }
+.choose { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; margin: 18px 0; font: 12px var(--mono); color: var(--ink-3); }
+.seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--rule); }
+.seg button { position: relative; z-index: 1; min-height: 34px; font-size: 13.5px; color: var(--ink-2); transition: color .2s; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button.on { color: var(--ink); } /* selected: ink on a faint ground, never a solid block of ink (white in the dark theme) */
+.seg .ind { position: absolute; top: -1px; bottom: -1px; left: 0; background: var(--hair); box-shadow: inset 0 0 0 1px var(--ink-3); transition: transform .3s var(--ease-out), width .3s var(--ease-out); }
+.apply { width: 100%; min-height: 48px; font-size: 15px; }
+body.keys-on .apply[data-kbd]:not(:disabled)::after { content: attr(data-kbd); font: 11px/1 var(--mono); padding: 3px 5px; border: 1px solid currentColor; opacity: .55; margin-left: 10px; }
+.plan { border: 1px dotted var(--rule); padding: 10px 12px; margin: 0 0 12px; font-size: 14px; color: var(--ink-2); }
+.plan .h { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin-bottom: 4px; }
+.plan b { color: var(--ink); font-weight: 550; }
+.plan.blocked { border-color: var(--red); }
+.plan:empty { display: none; }
+.cmd { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding-top: 8px; border-top: 1px dotted var(--rule); }
+.cmd code { flex: 1; font: 12px/1.5 var(--mono); color: var(--ink-2); word-break: break-word; }
+.copy { font: 12px var(--mono); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.copy:hover { color: var(--ink); }
+.story .when .copy { flex: none; text-decoration: none; }
+.copyall { justify-self: start; margin-top: 14px; }
+.toast { position: fixed; z-index: 60; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translate(-50%, 200%); opacity: 0; background: var(--ink); color: var(--bg); padding: 11px 16px; font-size: 14px; max-width: calc(100% - 32px); white-space: nowrap; }
+.toast button { color: inherit; text-decoration: underline; text-underline-offset: 3px; margin-left: 12px; }
+.inst { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px dotted var(--rule); font-size: 14px; }
+.inst:first-of-type { border-top: 0; }
+.inst b { font: 500 13px var(--mono); }
+.bar { height: 4px; background: var(--hair); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ink-2); }
+.bar i.hot { background: var(--red); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (max-width: 600px) { .frame > .inner { padding: 20px 16px 16px; } .row { padding: 12px 16px; } main { padding-left: 16px; padding-right: 16px; } header { padding-left: 16px; padding-right: 16px; } }
+/* ---------- live additions ---------- */
+.rules .rule { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 12px 22px; border-top: 1px dotted var(--rule); }
+.rules .rule:first-child { border-top: 0; }
+.rules .rule .name { font-weight: 550; }
+.rules .rule .meta { font: 12px var(--mono); color: var(--ink-3); grid-column: 1; }
+.rules .rule.stalled .meta, .rules .rule.stopped .meta, .rules .rule.acting .meta { color: var(--red); }
+.rules .rule button { grid-row: 1 / span 2; grid-column: 2; font: 12px var(--mono); color: var(--ink-2); border: 1px solid var(--rule); padding: 6px 10px; }
+.rules .rule .warn { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); border-left: 2px solid var(--red); padding-left: 8px; margin-top: 4px; }
+.rules .empty, .sigs .empty, .list .empty { padding: 12px 22px; color: var(--ink-3); font-size: 14px; }
+.sigs { display: grid; gap: 10px; margin-top: 4px; }
+.sigs .sig { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; border-top: 1px dotted var(--rule); padding-top: 10px; }
+.sigs .sig code { font: 500 13.5px var(--mono); color: var(--ink); }
+.sigs .sig span.v { font: 500 15px var(--sans); font-variant-numeric: tabular-nums; text-align: right; display: flex; gap: 14px; justify-content: flex-end; flex-wrap: wrap; }
+.sigs .sig span.v small { font: 13px var(--sans); color: var(--ink-3); margin-left: 4px; }
+.sigs .sig .lv em { font-style: normal; font-weight: 400; color: var(--ink-3); margin-right: 2px; } .sigs .sig .lv small { margin-left: 3px; }
+.sigs .sh, .notes .sh { font: 12px var(--mono); letter-spacing: .06em; color: var(--ink-3); margin: 14px 0 -2px; } .sigs .sh span, .notes .sh span { letter-spacing: 0; }
+.sigs .sig .about { grid-column: 1 / -1; font-size: 13px; color: var(--ink-3); }
+.status { margin-top: 28px; font: 12px var(--mono); color: var(--ink-3); }
+.status.stale { color: var(--red); }
+.facts { display: grid; grid-template-columns: max-content 1fr; align-items: baseline; gap: 6px 16px; margin: 14px 0 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.facts dt { font: 12px/1.9 var(--mono); letter-spacing: .06em; color: var(--ink-3); }
+.facts dd { margin: 0; }
+.facts dd.bad { color: var(--ink); }
+.levsep { border-top: 1px solid var(--rule); margin: 4px 0; }
+.row.lever .meta.live { color: var(--ink-2); }
+.scope .note { font: inherit; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
+.scope .note:hover { color: var(--ink); }
+.notes { margin-top: 18px; display: grid; gap: 8px; }
+.notes p { margin: 0; font-size: 13.5px; color: var(--ink-2); border-top: 1px dotted var(--rule); padding-top: 10px; }
+.notes p b { font-weight: 550; color: var(--ink); } .notes code { font: 12.5px var(--mono); color: var(--ink); }
+#facts dd code { font: 12.5px var(--mono); color: var(--ink); white-space: nowrap; }
+.facts button.lever { font: 13px var(--mono); color: var(--ink); border: 1px solid var(--rule); padding: 3px 8px; margin: 2px 4px 2px 0; }
+.facts button.lever:hover { border-color: var(--ink-2); }
+.reason { width: 100%; margin: 0 0 12px; padding: 10px 12px; border: 1px dotted var(--rule); background: transparent; color: inherit; font: 14px var(--sans); }
+
+/* ---------- polish ---------- */
+.hero .frame { background: var(--surface); }
+.scope { font: 12px/1.6 var(--mono); color: var(--ink-3); margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 0 14px; }
+.scope b { font-weight: 400; color: var(--ink-2); }
+.scope .bad { color: var(--red); }
+.fig { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: -4px 0 14px; }
+.fig .big { font: 600 36px/1 var(--display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.fig .big.hot { color: var(--red); }
+.fig .big small { font: 500 15px var(--sans); color: var(--ink-3); letter-spacing: 0; margin-left: 3px; }
+.fig .of { font: 13px var(--sans); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.fig .key { color: var(--red); white-space: nowrap; }
+.fig .key::before { content: ""; display: inline-block; vertical-align: middle; width: 18px; height: 1.25px; margin: -2px 6px 0 0; background: repeating-linear-gradient(90deg, var(--red) 0 6px, transparent 6px 9px); }
+.fig .grow { flex: 1; }
+/* rolling digits: each glyph its own clip, the new one rises in */
+.roll { display: inline-flex; font-variant-numeric: tabular-nums; }
+.roll .ch { display: inline-block; position: relative; overflow: hidden; height: 1.08em; line-height: 1.08em; }
+.roll .ch > span { display: block; }
+.roll .ch > span.out { position: absolute; left: 0; top: 0; }
+/* the layer stack: default, fleet, agent, rule, pin; the one in effect filled */
+.stk { display: inline-flex; gap: 2px; vertical-align: 1px; margin-right: 7px; }
+.stk i { width: 5px; height: 5px; border: 1px solid var(--ink-4); }
+.stk i.has { border-color: var(--ink-3); }
+.stk i.win { background: var(--ink); border-color: var(--ink); }
+.lease { display: block; height: 1px; background: var(--hair); margin-top: 6px; width: 120px; }
+.lease i { display: block; height: 1px; background: var(--ink-2); }
+/* rules, honest */
+.rules .rule .st { font: 12px var(--mono); color: var(--ink-2); grid-column: 1 / -1; }
+.rules .rule .meta { grid-column: 1 / -1 !important; }
+.rules .rule button[data-r] { grid-row: 1 !important; }
+.rules .rule button.see { all: unset; cursor: pointer; font: 12px var(--mono); color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+.row .val { white-space: nowrap; }
+.rules .rule .st b { font-weight: 400; color: var(--ink); }
+.rules .rule.stopped .st b, .rules .rule.error .st b { color: var(--red); }
+.rules .rule.disabled .st b { color: var(--ink-3); }
+.rules .rule .meta { color: var(--ink-3) !important; }
+.rules .rule .warn code { font: 12px var(--mono); color: var(--ink); }
+/* stories, said once */
+.story .swhy { margin: 0; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fx { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; font: 12.5px var(--mono); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.fx .k { color: var(--ink-3); margin-right: 6px; }
+.fx .d { margin-left: 6px; }
+.fx .d.worse { color: var(--red); }
+.fx .d.better { color: var(--ink); }
+.fx .conf { color: var(--ink-3); }
+.story .more { font: 12px var(--mono); color: var(--ink-3); margin-top: 8px; text-decoration: underline; text-underline-offset: 3px; }
+.story .detail { display: none; margin: 8px 0 0; color: var(--ink-3); font-size: 14px; }
+.story.open .detail { display: block; }
+/* routes: many endpoints */
+.routes { display: grid; }
+.rt { display: grid; grid-template-columns: 1fr 96px 64px 56px; gap: 14px; align-items: center; width: 100%; text-align: left; padding: 9px 20px; font-size: 14px; transition: background .15s; }
+.rt + .rt { border-top: 1px dotted var(--rule); }
+.rt .rn { font: 13px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt .rn i { font-style: normal; color: var(--ink-3); margin-right: 6px; }
+.rt .sp { height: 18px; width: 96px; }
+.rt .sp polyline { fill: none; stroke: var(--ink-3); stroke-width: 1; }
+.rt.hot .sp polyline { stroke: var(--red); stroke-width: 1.75; }
+.rt .sp line { stroke: var(--red); stroke-dasharray: 4 2; }
+.rt .v { font: 13px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.rt.hot .v { color: var(--red); }
+.rt .q { font: 11.5px var(--mono); color: var(--ink-3); text-align: right; }
+.rt.on { background: var(--hair); }
+.rt.on .rn { font-weight: 600; }
+@media (hover: hover) and (pointer: fine) { .rt:hover { background: var(--hair); } }
+.rthead { display: grid; grid-template-columns: 1fr 96px 64px 56px; gap: 14px; padding: 4px 20px 8px; font: 10.5px var(--mono); letter-spacing: .06em; color: var(--ink-3); }
+.rthead span:nth-child(n+3) { text-align: right; }
+.rtmore { padding: 10px 20px 2px; font: 12px var(--mono); color: var(--ink-3); }
+.rtmore button { text-decoration: underline; text-underline-offset: 3px; color: var(--ink-2); }
+@media (max-width: 600px) { .rt, .rthead { grid-template-columns: 1fr 56px 52px; padding-left: 16px; padding-right: 16px; } .rt .sp, .rthead span:nth-child(2) { display: none; } }
+/* preview switcher (fixtures only) */
+.pv { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 7px max(24px, env(safe-area-inset-right)) 7px max(24px, env(safe-area-inset-left)); font: 11.5px var(--mono); color: var(--ink-3); border-bottom: 1px dotted var(--rule); }
+.pv a { color: var(--ink-2); text-decoration: none; } .pv a.on { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.btn, .row, .rt, .rules .rule button, .freeze, .lever { transition: transform .12s var(--ease-out), background .15s, color .15s, border-color .15s; }
+.pressed, .rt.pressed, .rules .rule button.pressed { transform: scale(.97); }
+.row.pressed { transform: scale(.985); }
+
+/* Section labels, one weight wherever they head a group (RUNTIME, NEEDS ATTENTION, THE REST, WHO HOLDS IT, BEFORE
+   YOU CHANGE IT, the keys): full ink and semibold, so a group's start is found before its contents; what trails
+   a label (". Go and the container, last 10 s") stays quiet. Frame titles, row labels and column heads are not
+   section labels and keep their own look. */
+.keys h4, .isheet .sh, .stack .h, .history .h, .plan .h, .sigs .sh, .notes .sh { font: 600 12.5px var(--mono); letter-spacing: .08em; color: var(--ink); }
+.isheet .sh span, .sigs .sh span, .notes .sh span { font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <div class="svc"><span class="mark"><i></i><i></i><i></i></span><span id="svcName">service</span><small>vis</small></div>
+  <div class="grow"></div>
+  <button class="freeze" id="freezeBtn" aria-pressed="false" aria-keyshortcuts="f Shift+F" title="Stop rules, agents and rollouts from changing knobs. Every knob holds its value."><span class="sq"></span><span id="freezeLbl">Freeze</span><span class="kbd">F</span></button>
+</header>
+<div class="viewbar" id="viewBar" role="status"><span id="viewTxt"></span><button id="viewBack"></button></div>
+<div class="freezebar" id="freezeBar" role="status">
+  <b>[ FROZEN ]</b><span id="freezeWho"></span>
+  <input id="freezeWhy" placeholder="add a reason (shown to everyone)" aria-label="Reason for the freeze">
+  <button id="unfreezeBtn">Unfreeze</button>
+</div>
+
+<main>
+  <div class="center">
+    <section class="hero">
+      <h1 id="headline">Connecting…</h1>
+      <dl class="facts" id="facts"></dl>
+      <div class="scope" id="scope"></div>
+      <div class="frame"><span class="label">[ <span id="stripLabel">P99</span> · LAST HOUR<span class="k"> · t</span> ]</span><div class="inner">
+        <div class="fig"><span class="big num" id="figBig"></span><span class="of" id="figOf"></span><span class="grow"></span><span class="of" id="figRight"></span></div>
+        <div class="strip" id="strip" tabindex="0" role="slider" aria-keyshortcuts="t" aria-label="p99 latency over the last hour. Arrow keys move through time, brackets jump between events, Enter opens the matching story.">
+          <svg id="stripSvg"></svg>
+          <div class="readout" id="readout"></div>
+        </div>
+        <div class="axis" id="axis"><span>-60m</span><span>-30m</span><span>now</span></div>
+      </div></div>
+      <div class="fsw mtiles" id="memTiles" hidden>
+        <div class="tile"><span class="c tl">+</span><span class="c tr">+</span><span class="c bl">+</span><span class="c br">+</span><span class="label">[ MEMORY <span>· LAST 10 MIN, NEXT 3</span> ]</span>
+          <div class="fig"><span class="big num" id="memBig"></span><span class="of" id="memOf"></span></div>
+          <div class="strip mem"><svg id="memSvg"></svg></div>
+          <div class="maxis" id="memAxis"></div>
+        </div>
+        <div class="tile"><span class="c tl">+</span><span class="c tr">+</span><span class="c bl">+</span><span class="c br">+</span><span class="label">[ LIVE HEAP ]</span>
+          <div class="waffle" id="waffle" role="img"></div>
+          <dl class="wkey" id="wkey"></dl>
+        </div>
+      </div>
+    </section>
+
+    <div class="frame" id="routesFrame" hidden><span class="label">[ ROUTES<span class="k"> · r</span> ]</span><div style="padding:14px 0 10px"><div class="rthead"><span>ROUTE</span><span>LAST HOUR</span><span>P99</span><span>SLO</span></div><div class="routes" id="routes"></div><div class="rtmore" id="rtmore"></div></div></div>
+
+  </div>
+  <div class="todaycol"><div class="frame"><span class="label">[ TODAY<span class="k"> · j k</span> ]</span><div class="inner"><div class="stories" id="stories" role="list" aria-label="Today" aria-keyshortcuts="j k"></div></div></div></div>
+
+  <aside>
+    <div class="frame"><span class="label">[ KNOBS<span id="knobFirst"></span><span class="k"> · 1–9</span> ]</span><div class="list" id="knobList" style="padding:10px 0 4px"></div></div>
+    <div class="frame"><span class="label">[ RULES ]</span><div class="rules" id="rules" style="padding:6px 0 4px"></div></div>
+    <div class="frame"><span class="label">[ <span id="instLabel">INSTANCE</span><span class="k"> · i</span> ]</span><div style="padding:8px 0 2px"><button class="row fleet" id="fleetBtn" aria-keyshortcuts="i">
+      <span class="dots" id="dots"><i></i></span>
+      <span class="meta live" id="fleetTxt">…</span>
+      <span class="chev" style="margin-left:auto">→</span>
+    </button></div></div>
+    <div class="status" id="status">connecting<span class="keys-hint"> · <button id="keysBtn">press ? for keys</button></span></div>
+  </aside>
+</main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="grab" id="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<div class="dockscrim" id="dockScrim" aria-hidden="true"></div>
+<div class="dock" id="dock" role="region" aria-label="The fleet">
+  <div class="rule" aria-hidden="true"><span class="c l">+</span><span class="title" id="dockTitle">[ FLEET ]</span><span class="c r">+</span></div>
+  <div class="split" id="dockSplit" role="separator" aria-orientation="horizontal" aria-label="Resize the fleet panel" aria-controls="dockBody" tabindex="0"></div>
+  <div class="strip"><button class="fact" id="dockFact" aria-controls="dockBody" aria-expanded="false" aria-keyshortcuts="i" title="Open or close the fleet (i)"></button></div>
+  <div class="body" id="dockBody" tabindex="-1"></div>
+</div>
+
+<script type="module">
+/* The live control UI. Everything comes from the instance's /api, polled; nothing is simulated.
+   Changes made here are the configured person's pins, planned with /api/preview first. */
+
+/* ---------------- motion ---------------- */
+let M = null;
+try { M = await import("https://cdn.jsdelivr.net/npm/motion@14.9.0/+esm"); } catch {}
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function spring(el, kf, o = {}) {
+  const end = () => { for (const [k, v] of Object.entries(kf)) el.style[k] = Array.isArray(v) ? v[v.length - 1] : v; };
+  if (REDUCED) return end();
+  if (M) return M.animate(el, kf, { type: M.spring, bounce: o.bounce ?? 0.18, visualDuration: o.d ?? 0.4, delay: o.delay ?? 0 });
+  const a = el.animate(kf, { duration: (o.d ?? .4) * 1000, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" }); a.onfinish = end; return a;
+}
+function tween(ms, fn, ease = t => 1 - Math.pow(1 - t, 3)) {
+  return new Promise(res => {
+    if (REDUCED) { fn(1); return res(); }
+    const t0 = performance.now();
+    const step = now => { const t = Math.min(1, (now - t0) / ms); fn(ease(t)); t < 1 ? requestAnimationFrame(step) : res(); };
+    requestAnimationFrame(step);
+  });
+}
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+document.addEventListener("pointerdown", e => {
+  const b = e.target.closest(".btn, .row"); if (!b) return;
+  b.classList.add("pressed");
+  const up = () => { b.classList.remove("pressed"); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); };
+  addEventListener("pointerup", up); addEventListener("pointercancel", up);
+});
+
+/* ---------------- values ---------------- */
+// Durations come as Go strings ("1m30s", "500ms"); the dial works in milliseconds.
+function durMs(s) {
+  if (typeof s === "number") return s;
+  let ms = 0; const re = /([\d.]+)(h|ms|µs|us|ns|m|s)/g; let m;
+  while ((m = re.exec(s))) ms += +m[1] * { h: 3600e3, m: 60e3, s: 1e3, ms: 1, "µs": 1e-3, us: 1e-3, ns: 1e-6 }[m[2]];
+  return ms;
+}
+const durText = ms => ms >= 1000 ? `${+(ms / 1000).toFixed(ms % 1000 ? 2 : 0)}s` : `${+ms.toFixed(ms < 10 ? 2 : 0)}ms`;
+// Log levels come as slog's names ("INFO", "DEBUG-4"); the dial works in slog's numbers.
+const LV = { TRACE: -8, DEBUG: -4, INFO: 0, WARN: 4, ERROR: 8 }; // TRACE is DEBUG-4, which slog leaves unnamed
+const lvNum = s => { if (typeof s === "number") return s; const m = /^([A-Z]+)([+-]\d+)?$/.exec(String(s).toUpperCase()); return m && m[1] in LV ? LV[m[1]] + (+m[2] || 0) : 0; };
+const lvText = n => { const b = n <= -8 ? "TRACE" : n < 0 ? "DEBUG" : n < 4 ? "INFO" : n < 8 ? "WARN" : "ERROR", o = n - LV[b]; return o ? `${b}${o > 0 ? "+" : ""}${o}` : b; };
+const numOf = (k, v) => k.type === "duration" ? durMs(v) : k.type === "level" ? lvNum(v) : v;
+const show = (k, v) => k.special && v === k.special ? v : k.type === "duration" ? durText(numOf(k, v)) : k.type === "level" ? lvText(numOf(k, v)) : typeof v === "number" ? v.toLocaleString() : v;
+// a value as people read it: with its unit, "16 items", "5ms"
+const withUnit = (k, v) => k && k.unit ? `${show(k, v)} ${k.unit}` : k ? show(k, v) : v;
+const times = (a, b) => { const r = a / b; return r >= 1.5 ? (r < 2.5 ? "about twice" : `${r > 10 ? "more than" : "nearly"} ${Math.round(r)} times`) : "above"; };
+const sentence = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const clock = t => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const ago = t => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : clock(t); };
+
+/* ---------------- data ---------------- */
+let D = null, lastOK = 0, polling = null, streaming = false;
+// Another member, viewed and acted on through this page (?instance=, forwarded over the ring); null is this one.
+let viewing = null, home = null, es = null;
+// Preview: ?state=<fixture> renders a saved /api/state from ui/fixtures (served by any static server, not by
+// the instance), for screenshots; time is the fixture's own, and nothing is written.
+const Q = new URLSearchParams(location.search), FIX = Q.get("state");
+if (Q.get("theme")) document.documentElement.dataset.theme = Q.get("theme");
+let FIXD = null, tick = 0;
+if (FIX) {
+  FIXD = await (await fetch(`fixtures/${FIX}.json`)).json();
+  const realNow = Date.now.bind(Date), t0 = realNow(), at = Date.parse(FIXD.now);
+  Date.now = () => at + (realNow() - t0);
+  const pv = document.createElement("div"); pv.className = "pv";
+  const link = (k, v, label) => { const q = new URLSearchParams(location.search); q.set(k, v); return `<a href="?${q}" class="${(Q.get(k) || ({ theme: "auto" }[k] || "")) === v ? "on" : ""}">${label ?? v}</a>`; };
+  pv.innerHTML = `PREVIEW ${["bare", "calm", "breach", "recovering", "stopped", "frozen", "squeezed", "routes", "fleet", "rollout"].map(s => link("state", s)).join(" ")} · ${["auto", "light", "dark"].map(t => link("theme", t)).join(" ")}`;
+  document.querySelector("main").before(pv);
+}
+async function api(path, body) {
+  if (FIX) {
+    if (path === "/api/state") { // a little movement, so rolling values can be seen
+      const d = structuredClone(FIXD), w = 1 + Math.sin(++tick * 1.7) * .03;
+      for (const r of d.routes) if (r.now?.p99_ms != null && tick > 1) r.now.p99_ms *= w;
+      return d;
+    }
+    if (path === "/api/preview") { const [k, v] = Object.entries(body.set)[0]; return { effects: [{ knob: k, layer: "pin", value: v }] }; }
+    throw new Error("Preview: nothing changes here.");
+  }
+  if (viewing) path += `${path.includes("?") ? "&" : "?"}instance=${encodeURIComponent(viewing)}`;
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+async function poll() {
+  try {
+    D = await api("/api/state"); lastOK = Date.now();
+    render();
+  } catch (e) { $("#status").classList.add("stale"); $("#status").firstChild.textContent = `can't reach the instance: ${e.message}`; }
+}
+// A member's instance sheet: this page's own from what it has, another's asked for through this one.
+async function showMember(name) {
+  const inDock = dockOpen(); // from the fleet panel: the member's sheet takes its place there
+  if (D.fleet.members.find(m => m.self)?.name === name) return showInstance(false, D, inDock);
+  if (FIX) return toast("Preview: no other members to ask here.");
+  try {
+    const r = await fetch(`/api/state?instance=${encodeURIComponent(name)}`), st = await r.json();
+    if (!r.ok) throw new Error(st.error || r.statusText);
+    showInstance(false, st, inDock);
+  } catch (e) { toast(`${name}: ${e.message}`); }
+}
+// Open a member: the whole page becomes that member's, polled through this one, and acting here acts there,
+// as this page's person. Opening this page's own member goes back to the stream.
+function view(name) {
+  if (FIX) return toast("Preview: there are no other members here.");
+  home ||= D.fleet?.members.find(m => m.self)?.name;
+  viewing = name === home ? null : name;
+  es?.close(); es = null; clearInterval(polling); polling = null; streaming = false; D = null;
+  document.body.classList.toggle("viewing", !!viewing);
+  $("#viewTxt").innerHTML = viewing ? `Viewing <b>${esc(viewing)}</b> from ${esc(home)}. What you change here, you change on ${esc(viewing)}.` : "";
+  $("#viewBack").textContent = `Back to ${home}`;
+  if (viewing) { mode = `viewing ${viewing}`; poll(); polling = setInterval(poll, 2000); } else { mode = "live"; connect(); }
+}
+$("#viewBack").onclick = () => view(home);
+// After an action: the stream brings the change within 50 ms; without one, fetch it.
+const refresh = () => streaming ? Promise.resolve() : poll();
+// A stream event carries every route's newest buckets only (all of them on connect): put them in place by start.
+function merge(next) {
+  if (!D) return next;
+  const old = Object.fromEntries((D.routes || []).map(r => [r.route, r.history || []]));
+  for (const r of next.routes || []) {
+    const byStart = new Map((old[r.route] || []).map(b => [b.start, b]));
+    for (const b of r.history || []) byStart.set(b.start, b);
+    r.history = [...byStart.values()].sort((a, b) => a.start < b.start ? -1 : 1).slice(-N);
+  }
+  return next;
+}
+// The stream (GET /api/events); if it can't connect three times running (a proxy that won't stream), poll.
+function connect() {
+  es = new EventSource("/api/events");
+  let opened = false, fails = 0;
+  es.addEventListener("state", e => {
+    opened = streaming = true; fails = 0;
+    D = merge(JSON.parse(e.data)); lastOK = Date.now();
+    try { render(); } catch (err) { // say so, rather than look like it never connected
+      console.error(err);
+      $("#status").firstChild.textContent = "the page failed to draw this state: " + err.message;
+    }
+  });
+  es.onerror = () => {
+    streaming = false;
+    if (!opened && ++fails >= 3) {
+      es.close(); poll(); polling = setInterval(poll, 2000);
+      mode = "polling: the stream didn't connect";
+    }
+  };
+}
+let mode = "live";
+// The strip shows one route: the one picked, else the one furthest over its SLO, else the busiest.
+let pickedRoute = null;
+const sloOf = r => r?.slo_ms || 0;
+const strain = r => sloOf(r) && r.now?.p99_ms != null ? r.now.p99_ms / sloOf(r) : 0;
+function rankedRoutes() {
+  return [...(D?.routes || [])].sort((a, b) => (strain(b) > 1) - (strain(a) > 1) || strain(b) - strain(a) || (b.now?.requests || 0) - (a.now?.requests || 0));
+}
+const route = () => D?.routes?.find(r => r.route === pickedRoute) || rankedRoutes()[0];
+// Why the chart shows this route: you picked it, it's over its SLO, or, with no
+// SLO to rank by, it's the busiest (or the only one). A route within its SLO
+// needs no reason: its SLO line is on the chart.
+function routeWhy(r) {
+  if (!r) return "";
+  if (r.route === pickedRoute) return "picked";
+  if (strain(r) > 1) return "over its SLO";
+  if (sloOf(r)) return "";
+  return (D.routes || []).length > 1 ? "busiest" : "only route";
+}
+const slo = () => route()?.slo_ms || D?.slo?.p99_ms || 0;
+// Nothing declared yet: vis is wired (vis.Start, the middleware) and only measures. The page says what it
+// sees and the next step, instead of judging against objectives that don't exist.
+// The first minute after a start isn't a verdict: caches, connections and models are still loading,
+// so the first requests are slow in any service. The page shows them, and judges the SLO after.
+const WARM = 60e3;
+const warming = () => !!D.started && Date.now() - Date.parse(D.started) < WARM;
+const noObjectives = () => !(D.slos || []).length && !(D.routes || []).some(sloOf);
+
+/* ---------------- headline ---------------- */
+let lastHead = "";
+function problems() {
+  const r = route(), rt = D.runtime, out = [];
+  // A route whose last 10 s are back within its SLO is recovering: its minute still holds the slow requests
+  // from before, and says so for up to 70 s more, but whoever fixed it shouldn't read that as still broken.
+  const over = warming() ? [] : (D.routes || []).filter(x => strain(x) > 1), mending = over.filter(x => overRun(x).recovering != null);
+  const hot = over.filter(x => !mending.includes(x));
+  if (hot.length === 1 && D.routes.length > 1) out.push({ sev: 3, alert: true, h: `${hot[0].route} is over its SLO.` });
+  else if (hot.length > 1) out.push({ sev: 3, alert: true, h: `${hot.length} routes are over their SLO.` });
+  else if (hot.length) out.push({ sev: 3, alert: true, h: "Latency is over the SLO." });
+  else if (mending.length) out.push({ sev: 2, h: mending.length > 1 || D.routes.length > 1 && mending[0] !== route() ? `${mending.length > 1 ? `${mending.length} routes are` : `${mending[0].route} is`} recovering.` : "Recovering." });
+  if (rt.cpu_limit && rt.throttled > .25) out.push({ sev: 2, alert: true, h: "The container is out of CPU." });
+  // This member dying again and again is the incident on its own page; a peer's is fleetIssue's.
+  const me = fleetOn() && D.fleet.members.find(m => m.self);
+  if (me && looping(me)) out.push({ sev: 3, alert: true, h: `This member keeps restarting${/memory/.test(me.died) ? ", killed for memory" : ""}.` });
+  else if ((D.pressures || []).some(p => p.resource === "memory")) out.push({ sev: 2, alert: true, h: "Running short of memory." });
+  const stalled = D.rules.filter(x => x.state === "stalled" || x.state === "stopped" || x.state === "error");
+  if (stalled.length && !out.length) out.push({ sev: 1, h: `${stalled.length > 1 ? "Rules have" : "A rule has"} stopped acting.` });
+  const f = fleetIssue(); if (f && !(f.self && out.some(x => x.sev === 3))) out.push(f);
+  return out.sort((a, b) => b.sev - a.sev);
+}
+// In a fleet the page is one member's, but the verdict is the fleet's: a member over the objective the
+// rest meet is the incident wherever the page is open. This member's own trouble is said above already.
+const fleetOn = () => D.fleet && (D.fleet.members || []).length > 1;
+// Dying again and again: restarts with a cause, the last within 2 minutes. Up longer, a fix has held so far (c,
+// fixed on call, read "keeps restarting" for its whole 10 minute window): its restarts are history, said as such.
+const looping = m => m.restarts > 1 && !!m.died && durMs(m.restarted || "0s") < 120e3;
+const dur = ms => ms >= 1000 ? `${(ms / 1000).toFixed(1)} s` : `${Math.round(ms)} ms`;
+// A member's value of a difference when the rest agree on another: the odd one out, and what the rest have.
+const oddOut = (d, name) => {
+  const v = d.values[name], rest = Object.entries(d.values).filter(([n]) => n !== name).map(([, x]) => x);
+  return v != null && rest.length && rest.every(x => x === rest[0]) && rest[0] !== v ? rest[0] : null;
+};
+const andList = xs => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`;
+function fleetIssue() {
+  if (!fleetOn()) return null;
+  const f = D.fleet, me = f.members.find(m => m.self)?.name;
+  const names = [...new Set((f.stand_out || []).map(x => x.member))].filter(n => n !== me);
+  const missed = (f.slos || []).some(x => !x.met);
+  if (!names.length) return missed ? { sev: 3, alert: true, self: true, h: "The fleet is over its SLO." } : null;
+  // A member dying again and again is the incident, whatever its numbers between deaths.
+  const dying = f.members.filter(m => names.includes(m.name) && looping(m)).map(m => m.name);
+  if (dying.length && !missed) return { sev: 2, alert: true, h: `${andList(dying)} ${dying.length > 1 ? "keep" : "keeps"} restarting${dying.length === 1 && /memory/.test(f.members.find(m => m.name === dying[0]).died) ? ", killed for memory" : ""}.` };
+  return { sev: missed ? 3 : 1, alert: missed, h: `${andList(names)} ${names.length > 1 ? "are" : "is"} ${missed ? "over the SLO" : "standing out"}.` };
+}
+// The facts under the headline: one line each, labeled, written as sentences.
+// When the current run over the SLO began (one quiet bucket doesn't end it), or when the route was last over it.
+function overRun(r) {
+  const h = r?.history || [], lim = sloOf(r) || slo(); if (!lim || !h.length) return {};
+  let i = h.length - 1, quiet = 0, from = null;
+  if (h[i].p99_ms > lim || (r.now?.p99_ms ?? 0) > lim) {
+    const last = h[i]; while (i > 0 && h[i].p99_ms <= lim) i--; // the minute is over, the latest buckets may not be
+    // The minute stops counting the last slow bucket 70 s after it began: 60 s of window, and the bucket's own 10.
+    const clears = h[i].p99_ms > lim ? Date.parse(h[i].start) + 70e3 : null;
+    for (; i >= 0; i--) { if (h[i].p99_ms > lim) { from = h[i].start; quiet = 0; } else if (++quiet > 1) break; }
+    // Recovery is judged on complete buckets. The one still filling holds the first few requests of its 10 s,
+    // often fast ones, and judged alone it flips the headline to Recovering in the middle of a breach. It
+    // counts once it has a fifth of a full bucket's requests: then it can only say not yet.
+    const done = b => Date.parse(b.start) + 10e3 <= Date.now(), lastDone = h.findLast(done), filling = done(last) ? null : last;
+    const fillingOK = !filling || filling.p99_ms <= lim || filling.requests < 0.2 * (lastDone?.requests || 0);
+    return { since: Date.parse(from), recovering: lastDone && lastDone.p99_ms <= lim && fillingOK ? lastDone.p99_ms : null, clears };
+  }
+  for (; i >= 0; i--) if (h[i].p99_ms > lim) return { lastOver: Date.parse(h[i].start) + 10e3 };
+  return { clean: Date.parse(h[0].start) };
+}
+const span = t => { const m = Math.max(1, Math.round((Date.now() - t) / 60e3)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
+// The facts under the headline: only what isn't said anywhere else on the screen. The number is the figure's,
+// CPU is the scope line's, the freeze is the bar's, a rule's state is the card's, a story's numbers are the story's.
+function facts() {
+  const r = route(), rt = D.runtime, out = [];
+  const p99 = r?.now?.p99_ms;
+  const many = (D.routes || []).length > 1, over = rankedRoutes().filter(x => strain(x) > 1);
+  if (warming() && !noObjectives()) out.push(["LATENCY", `Started ${Math.max(1, Math.round((Date.now() - Date.parse(D.started)) / 1000))} s ago. The first requests after a start are slow while caches, connections and models load, so vis judges the SLO from a minute after start.`, false]);
+  else if (many && over.length) out.push(["LATENCY", over.slice(0, 3).map(x => overRun(x).recovering != null ? `${x.route} recovering` : `${x.route} over since ${clock(overRun(x).since)}`).join("; ") + (over.length > 3 ? `; ${over.length - 3} more.` : "."), true]);
+  else if (!(D.routes || []).length) out.push(["LATENCY", { html: "No requests yet. vis times the requests <code>vis.HTTP</code> or a framework's middleware serves." }, false]);
+  else if (p99 == null) out.push(["LATENCY", "No requests in the last minute.", false]);
+  else if (noObjectives()) {
+    const slow = [...D.routes].filter(x => x.now?.p99_ms != null).sort((a, b) => b.now.p99_ms - a.now.p99_ms)[0];
+    // Say what's measured and why it matters, so the numbers aren't a mystery: vis times requests
+    // before anything is declared, and an objective is what turns them into a verdict.
+    const so = !slow ? "" : many ? ` So far ${D.routes.length} routes; the slowest, ${slow.route}, has a p99 of ${slow.now.p99_ms.toFixed(0)} ms over the last minute.`
+      : ` So far: ${slow.route}, p99 ${slow.now.p99_ms.toFixed(0)} ms over the last minute.`;
+    out.push(["MEASURING", `vis times every request its middleware serves, by route.${so}`, false]);
+    out.push(["WHY", "An objective is the line vis judges a route against, and what rules and agents work to keep. Set it from these numbers.", false]);
+  }
+  else if (slo()) {
+    const run = overRun(r);
+    if (p99 > slo() && run.since && run.recovering != null) out.push(["LATENCY", `Back within the SLO: the last 10 s were ${run.recovering.toFixed(0)} ms. The minute still counts the slow requests from before${run.clears > Date.now() ? ` for about ${Math.round((run.clears - Date.now()) / 1000)} s more` : ""}.`, false]);
+    else if (p99 > slo() && run.since) out.push(["LATENCY", `Over since ${clock(run.since)}, ${span(run.since)}: ${times(p99, slo())} the SLO.`, true]);
+    else if (run.lastOver) out.push(["LATENCY", `${many ? "All routes within their SLO" : "Within the SLO"} for ${span(run.lastOver)}; last over at ${clock(run.lastOver - 10e3)}.`, false]);
+    else out.push(["LATENCY", `${many ? "All routes within their SLO" : "Within the SLO"} all hour.`, false]);
+  }
+  if (rt.cpu_limit && rt.throttled > .25) out.push(["CPU", `Out of CPU: throttled in ${rt.throttled > .95 ? "every" : `${Math.round(rt.throttled * 100)}% of`} scheduling periods.`, true]);
+  else if (rt.cpu_limit && rt.throttled > .01) out.push(["CPU", `Throttled now and then.`, false]);
+  for (const x of D.rules) { // only a rule that needs a person; the rest is on its card
+    if (x.state === "stalled") out.push(["RULE", `${x.name} moved ${x.knob} ${x.stalls === 2 ? "twice" : `${x.stalls} times`}, it didn't help, and it stopped.`, true]);
+    else if (x.state === "stopped") out.push(["RULE", `vis stopped ${x.name}: it made the SLO worse. Switch it back on once that's fixed.`, true]);
+    else if (x.state === "error") out.push(["RULE", `${x.name} can't act: ${x.err}`, true]);
+  }
+  for (const p of D.pressures || []) { // what's short; what to turn is in KNOBS, where the knobs are
+    const R = p.resource.toUpperCase(), there = levers().length ? " The knobs that use it are first in KNOBS." : "";
+    const f = out.find(([l]) => l === R);
+    if (f) f[1] += there;
+    else out.push([R, `Running short: ${p.why}.${there}`, true]);
+  }
+  if (noObjectives() && !D.knobs.length) out.push(["SETUP", { html: "Give a route an objective with <code>// vis:slo p99=300ms</code> above its handler, and make a setting changeable while it runs with <code>// vis:knob</code> above a <code>vis.Int</code> var. Then <code>go generate</code>. The guide: <code>go doc github.com/tfcace/vis</code>." }, false]);
+  return out;
+}
+function headline() {
+  const ps = problems();
+  const el$ = $("#facts"), fs = facts(), sig = JSON.stringify(fs);
+  if (sig !== el$._sig) {
+    el$._sig = sig;
+    el$.innerHTML = fs.map(([l, t, bad]) => typeof t === "string" || t.html ? `<dt>${l}</dt><dd class="${bad ? "bad" : ""}${l === "SETUP" ? " setup" : ""}">${t.html ?? esc(t)}</dd>`
+      : `<dt>${l}</dt><dd>Knobs that spend ${esc(t.resource.toUpperCase())}${t.levers.some(l => l.observed) ? ", what helped before first" : ", most expensive first"}: ${t.levers.map(lv =>
+          `<button class="lever" data-k="${esc(lv.knob)}" data-why="${esc(`${t.resource.toUpperCase()}: ${t.why}`)}">${esc(lv.knob)} at ${esc(lv.value)}${lv.observed ? ` (${esc(lv.observed)})` : lv.position >= .99 ? " (its most expensive)" : ""}</button>`).join(" ")}</dd>`).join("");
+    el$.querySelectorAll("button.lever").forEach(b => b.onclick = () => openKnob(D.knobs.find(k => k.name === b.dataset.k), { reason: b.dataset.why }));
+  }
+  const n = (D.routes || []).length;
+  const h = !ps.length ? (warming() && !noObjectives() ? "Just started." : !noObjectives() ? "All good." : n ? "No objective yet." : "Waiting for requests.") : ps.length <= 2 ? ps.map(x => x.h).join(" ") : `${ps.length} things need attention.`;
+  const el = $("#headline");
+  if (h !== lastHead) { lastHead = h; el.textContent = h; spring(el, { opacity: [0, 1], transform: ["translateY(6px)", "translateY(0px)"] }, { d: .35 }); }
+  el.classList.toggle("alert", ps.some(x => x.alert));
+  el.classList.toggle("two", ps.length === 2);
+}
+
+/* ---------------- rolling values ---------------- */
+// Each glyph sits in its own clip; a changed one rises in while the old one leaves. Transform and opacity only.
+// A space is a no-break space: alone in its inline-block, a plain one has no width ("no limit" read "nolimit").
+const glyph = c => c === " " ? "&nbsp;" : esc(c);
+function roll(el, text) {
+  text = String(text);
+  if (el._t === text) return;
+  const old = el._t; el._t = text;
+  if (old == null || old.length !== text.length || REDUCED) {
+    el.innerHTML = `<span class="roll">${[...text].map(c => `<span class="ch"><span>${glyph(c)}</span></span>`).join("")}</span>`; return;
+  }
+  const chs = el.querySelectorAll(".ch");
+  [...text].forEach((c, i) => {
+    if (old[i] === c) return;
+    const ch = chs[i], was = ch.querySelector("span:not(.out)"), up = c > old[i];
+    ch.querySelectorAll(".out").forEach(o => o.remove());
+    was.classList.add("out");
+    const n = document.createElement("span"); n.textContent = c === " " ? "\u00a0" : c; ch.appendChild(n);
+    const o = { duration: 180, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" };
+    was.animate([{ transform: "translateY(0)", opacity: 1 }, { transform: `translateY(${up ? -100 : 100}%)`, opacity: 0 }], o).onfinish = () => was.remove();
+    n.animate([{ transform: `translateY(${up ? 100 : -100}%)`, opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], o);
+  });
+}
+
+/* ---------------- the number, and where it comes from ---------------- */
+function renderFig() {
+  const r = route(), p = r?.now?.p99_ms, s = slo();
+  const big = $("#figBig");
+  if (p == null) { big.textContent = "–"; big._t = null; }
+  else { roll(big, p >= 100 ? p.toFixed(0) : p.toFixed(1)); if (!big.querySelector("small")) big.insertAdjacentHTML("beforeend", "<small>ms</small>"); }
+  big.classList.toggle("hot", !!(s && p > s));
+  $("#figOf").innerHTML = `p99 over the last minute${s ? `<span class="key" style="margin-left:14px">SLO ${s} ms</span>` : ""}`;
+  $("#figRight").textContent = r?.now?.requests != null ? `${r.now.requests.toLocaleString()} req` : "";
+}
+function renderScope() {
+  const rt = D.runtime, out = [];
+  const fresh = FIX || streaming ? "updated just now" : `updated ${Math.max(0, Math.round((Date.now() - lastOK) / 1000))} s ago`;
+  const me = fleetOn() && D.fleet.members.find(m => m.self);
+  out.push(me ? `<b>${esc(me.name)}</b>, 1 of ${D.fleet.members.length}` : `<b>1 instance</b>`, `build ${esc(String(D.build).slice(0, 7))}`);
+  if (rt.cpu_limit) out.push(`CPU ${rt.cpu_used.toFixed(2)} of ${rt.cpu_limit}`);
+  if ((D.routes || []).length > 1) out.push(`${D.routes.length} routes`);
+  out.push(fresh);
+  const n = notes().length;
+  if (n) out.push(`<button class="note" data-notes>${n} setup note${n > 1 ? "s" : ""}</button>`);
+  $("#scope").innerHTML = out.map(x => `<span>${x}</span>`).join("");
+}
+
+/* ---------------- memory: the container's last 10 minutes and its next 3, and the live heap ---------------- */
+// A leak's slope is a line's, not a sentence's. The same ticks as latency's, a point per 10 s, on a linear scale
+// from 0 to the limit (a ceiling, not a range to spread over), the limit dashed in red as the SLO is; a tick is red
+// from 85% of the limit, where vis calls memory short. Right of now, the forecast, dotted, to where it meets the
+// limit, as pressure reads it (none while a starting process's growth is a cache filling, not a trend).
+const PAST = 600, AHEAD = 180;
+function renderMem() {
+  // With no limit (a VM or a laptop, outside a cgroup, without GOMEMLIMIT) memory still shows, scaled to its own peak,
+  // with no limit line and no forecast.
+  const rt = D.runtime, pts = (D.memory || []).slice(-60), lim = rt.mem_limit_mb, tiles = $("#memTiles");
+  tiles.hidden = !pts.length;
+  if (tiles.hidden) return;
+  const top_ = lim || nice(Math.max(...pts.map(p => p.used_mb), rt.mem_used_mb) * 1.25, true);
+  const limName = { lambda: "Lambda", GOMEMLIMIT: "GOMEMLIMIT" }[rt.mem_limit_by] || "limit";
+  const used = rt.mem_used_mb, kill = D.memory_limit_in_s ?? -1;
+  const big = $("#memBig"); roll(big, String(Math.round(used))); if (!big.querySelector("small")) big.insertAdjacentHTML("beforeend", "<small>MiB</small>");
+  big.classList.toggle("hot", !!lim && used >= .85 * lim);
+  $("#memOf").innerHTML = `in use${lim ? `<span class="key" style="margin-left:14px">${limName} ${lim} MiB</span>` : `<span style="margin-left:14px">no limit</span>`}`;
+  renderHeap();
+  const svg = $("#memSvg"), w = svg.parentNode.clientWidth || 600, h = svg.parentNode.clientHeight || 110;
+  const sig = JSON.stringify([pts.map(p => p.used_mb), lim, Math.round(kill), w, h]);
+  if (sig === svg._sig) return; svg._sig = sig;
+  const top = 26, pw = w - G, nowX = Math.round(pw * PAST / (PAST + AHEAD)) + .5;
+  const xt = s => s <= 0 ? nowX + s / PAST * (nowX - .5) : nowX + s / AHEAD * (pw - nowX); // seconds from now
+  const y = v => h - 4 - Math.min(v / top_, 1) * (h - top - 4);
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`); svg.innerHTML = "";
+  mk("line", { class: "grid", x1: 0, x2: pw, y1: Math.round(y(top_ / 2)) + .5, y2: Math.round(y(top_ / 2)) + .5 }, svg);
+  mk("text", { class: "yl", x: w, y: y(top_ / 2) + 4, "text-anchor": "end" }, svg).textContent = `${Math.round(top_ / 2)} MiB`;
+  if (lim) {
+    mk("rect", { class: "over", x: 0, width: pw, y: y(lim), height: y(.85 * lim) - y(lim) }, svg); // short of memory, as latency's over the SLO
+    mk("line", { class: "slo", x1: 0, x2: pw, y1: y(lim), y2: y(lim) }, svg);
+    mk("text", { class: "yl objective", x: w, y: y(lim) + 4, "text-anchor": "end" }, svg).textContent = `${lim} MiB`;
+  } else mk("text", { class: "yl", x: w, y: y(top_) + 4, "text-anchor": "end" }, svg).textContent = `${Math.round(top_)} MiB`;
+  pts.forEach((p, i) => { const xi = Math.round(xt(-(pts.length - 1 - i) * 10)) + .5;
+    mk("line", { class: "tick" + (lim && p.used_mb >= .85 * lim ? " hot" : ""), x1: xi, x2: xi, y1: y(p.used_mb), y2: h - 4 }, svg); });
+  mk("line", { class: "now", x1: nowX, x2: nowX, y1: top - 6, y2: h }, svg);
+  // Past an hour a forecast is noise (a healthy member drifting read "limit in 268 min"), as the outlook and the dock
+  // say too: none is drawn.
+  if (lim && kill >= 0 && kill <= 3600) { // the forecast: a straight line from now's reading to the limit, or to the edge if past it
+    const at = Math.min(kill, AHEAD), v = kill <= AHEAD ? lim : used + (lim - used) * AHEAD / kill;
+    mk("line", { class: "fc" + (kill <= AHEAD ? " hot" : ""), x1: nowX, y1: y(used), x2: xt(at), y2: y(v) }, svg);
+    const say = kill < 1 ? "at the limit" : `limit in ${kill < 120 ? `${Math.round(kill)} s` : kill < 300 ? `${Math.round(kill / 10) * 10} s` : `${Math.round(kill / 60)} min`}`;
+    // Said where the line ends, above it: at the limit where it meets it, else at the edge, below the limit.
+    mk("text", { class: "lbl", x: Math.min(xt(at), pw), y: y(v) - 8, "text-anchor": "end" }, svg).textContent = say;
+  }
+  $("#memAxis").innerHTML = `<span style="left:0">${clock(Date.now() - PAST * 1e3)}</span><span style="left:${nowX / w * 100}%">now</span><span style="left:${(pw - 8) / w * 100}%">+3 min</span>`;
+}
+// The live heap against the limit, a cell per hundredth: what the program keeps (live), the garbage the GC lets
+// build before it collects (the heap goal, less live), and the rest the container holds. An agent read a heap
+// profile of 81 MiB against a container of 500 and took the gap for something else growing: here it is the
+// collector's allowance and the runtime's, in plain sight.
+function renderHeap() {
+  const rt = D.runtime, used = rt.mem_used_mb, lim = rt.mem_limit_mb || used, cell = lim / 100, live = rt.heap_live_mb || 0, goal = Math.max(rt.heap_goal_mb || 0, live); // no limit: the cells are what is in use
+  // Grown since the first reading after the start's first minute: before it, the cache filling is growth too, and on
+  // a live fleet the whole heap of a two-minute-old process read as grown.
+  const settled = Date.parse(D.started) + WARM, base = (D.memory || []).find(p => p.heap_mb > 0 && Date.parse(p.at) >= settled);
+  const span = base ? Math.round((Date.parse(D.now || new Date()) - Date.parse(base.at)) / 60e3) : 0, grew = base && span >= 1 ? Math.max(0, live - base.heap_mb) : 0;
+  const n = v => Math.round(Math.min(v, lim) / cell), nl = n(live), ngr = Math.min(n(grew), nl), ng = Math.max(n(goal), nl), nu = Math.max(n(used), ng);
+  const sig = [nl, ngr, ng, nu].join(), wf = $("#waffle");
+  if (wf._sig !== sig) { wf._sig = sig;
+    wf.innerHTML = Array.from({ length: 100 }, (_, i) => `<i class="${i < nl - ngr ? "live" : i < nl ? "grew" : i < ng ? "goal" : i < nu ? "rest" : ""}"></i>`).join("");
+    wf.setAttribute("aria-label", `Of the ${lim} MiB limit: live heap ${Math.round(live)} MiB, garbage the GC allows ${Math.round(goal - live)} MiB, the rest ${Math.max(0, Math.round(used - goal))} MiB, free ${Math.max(0, Math.round(lim - used))} MiB.`); }
+  const g = rt.heap_growth_mb_s;
+  $("#wkey").innerHTML = `<i class="live"></i><dt>live heap</dt><dd>${Math.round(live)} MiB</dd>`
+    + (ngr ? `<i class="grew"></i><dt>of it, grown in ${span} min</dt><dd>${Math.round(grew)} MiB</dd>` : "") + `<i class="goal"></i><dt>garbage the GC allows</dt><dd>${Math.round(goal - live)} MiB</dd>`
+    + `<i class="rest"></i><dt>the rest in use</dt><dd>${Math.max(0, Math.round(used - goal))} MiB</dd>${rt.mem_limit_mb ? `<i></i><dt>free</dt><dd>${Math.max(0, Math.round(lim - used))} MiB</dd>` : ""}`
+    + (g > .05 ? `<span class="note">The live heap grows ${g.toFixed(1)} MiB/s.</span>` : "");
+}
+
+/* ---------------- tick strip: one tick per 10 s bucket, the current one at the right ---------------- */
+const svgNS = "http://www.w3.org/2000/svg";
+const mk = (tag, a = {}, p) => { const e = document.createElementNS(svgNS, tag); for (const k in a) e.setAttribute(k, a[k]); p && p.appendChild(e); return e; };
+const strip = $("#stripSvg"), stripBox = $("#strip");
+let W = 600, H = 180, ticks = [], lblG, hair, band, sloLine, yG, B = 360;
+const TOP = 30, N = 360, G = 52; // G: the gutter on the right that holds the scale
+// The scale: the SLO sits at 40% of the height, so both sides of it read; values above the top are clipped and say so.
+// A log scale: latency spans orders of magnitude, so equal ratios get equal height. The domain runs on 1-2-5
+// steps from below the quietest bucket to above the worst, so nothing is clipped: 226 ms and 1409 ms look different.
+const nice = (v, up) => { const e = Math.pow(10, Math.floor(Math.log10(v))), m = v / e, steps = [1, 2, 5, 10];
+  return (up ? steps.find(s => s >= m - 1e-9) : [...steps].reverse().find(s => s <= m + 1e-9)) * e; };
+let dom = null; // [lo, hi], set once per draw
+function domain() {
+  const vs = binVals().filter(v => v > 0);
+  if (!vs.length) return [1, Math.max(100, slo() * 2)];
+  const lo = nice(Math.max(.1, Math.min(slo() || Infinity, ...vs) / 1.5), false);
+  const hi = nice(Math.max(slo() * 2 || 0, ...vs) * 1.1, true);
+  return [lo, Math.max(hi, lo * 10)];
+}
+const scale = () => (dom || domain())[1];
+const frac = v => { const [lo, hi] = dom || domain(); return v <= lo ? 0 : Math.log(Math.min(v, hi) / lo) / Math.log(hi / lo); };
+const yOf = v => H - 4 - frac(v) * (H - TOP - 6);
+const binOf = i => Math.min(B - 1, Math.floor(i * B / N));
+const PW = () => W - G;
+const x = b => Math.round((b / (B - 1)) * (PW() - 1)) + .5;
+// series[i]: bucket i of the last hour, i = N-1 the current one
+function series() {
+  const out = new Array(N).fill(null), h = route()?.history || [];
+  h.slice(-N).forEach((b, j, all) => { out[N - all.length + j] = b; });
+  return out;
+}
+const iAt = t => N - 1 - Math.floor((Date.now() - t) / 10000);
+const tAt = i => Date.now() - (N - 1 - i) * 10000;
+function binVals() {
+  const out = new Array(B).fill(0), s = series();
+  s.forEach((b, i) => { if (b) out[binOf(i)] = Math.max(out[binOf(i)], b.p99_ms); });
+  return out;
+}
+function buildStrip() {
+  W = strip.clientWidth || 600; H = strip.clientHeight || 180; B = Math.max(60, Math.min(N, Math.floor((W - G) / 3)));
+  strip.setAttribute("viewBox", `0 0 ${W} ${H}`); strip.innerHTML = "";
+  yG = mk("g", {}, strip);
+  sloLine = mk("line", { class: "slo", x1: 0, x2: PW() }, strip);
+  band = mk("rect", { class: "band", y: TOP - 6, height: H - TOP + 6 }, strip);
+  ticks = Array.from({ length: B }, (_, b) => mk("line", { class: "tick", x1: x(b), x2: x(b), y2: H - 4 }, strip));
+  lblG = mk("g", {}, strip);
+  mk("line", { class: "now", x1: PW() - .75, x2: PW() - .75, y1: TOP - 6, y2: H }, strip);
+  hair = mk("line", { class: "hair", y1: TOP - 6, y2: H }, strip);
+  if (D) drawStrip();
+}
+let marks = [];
+function drawStrip() {
+  if (!ticks.length || !D) return;
+  dom = null; dom = domain();
+  sloLine.setAttribute("y1", yOf(slo())); sloLine.setAttribute("y2", yOf(slo())); sloLine.style.display = slo() ? "" : "none";
+  const vals = binVals(), inRange = marks.filter(m => m.i >= 0);
+  // the scale: 0, the objective, the top; a value above the top reads "+"
+  yG.innerHTML = "";
+  const fmt = v => v >= 100 ? v.toFixed(0) : +v.toFixed(1);
+  const unit = v => v >= 1000 ? `${+(v / 1000).toFixed(1)} s` : `${fmt(v)} ms`;
+  if (slo()) mk("rect", { class: "over", x: 0, width: PW(), y: TOP - 6, height: Math.max(0, yOf(slo()) - (TOP - 6)) }, yG);
+  let stops = [];
+  { // 1-2-5 steps inside the domain; drop the 2s, then the 5s, until labels are 16px apart
+    const [lo, hi] = dom, all = [];
+    for (let e = Math.pow(10, Math.floor(Math.log10(lo))); e <= hi; e *= 10) for (const m of [1, 2, 5]) { const v = m * e; if (v >= lo * .999 && v <= hi * 1.001) all.push([v, m]); }
+    const fits = vs => vs.every((v, i) => !i || Math.abs(yOf(v[0]) - yOf(vs[i - 1][0])) >= 16);
+    for (const keep of [[1, 2, 5], [1, 5], [1]]) { stops = all.filter(([, m]) => keep.includes(m)); if (fits(stops)) break; }
+    stops = stops.map(([v, m]) => [v, unit(v), m === 1 ? "" : "minor"]);
+  }
+  if (slo()) { stops = stops.filter(([v]) => Math.abs(yOf(v) - yOf(slo())) >= 14); stops.push([slo(), unit(slo()), "slo"]); }
+  for (const [v, t, c] of stops) {
+    if (v > 0 && c !== "slo") mk("line", { class: "grid" + (c === "minor" ? " minor" : ""), x1: 0, x2: PW(), y1: Math.round(yOf(v)) + .5, y2: Math.round(yOf(v)) + .5 }, yG);
+    mk("text", { class: "yl" + (c === "slo" ? " objective" : ""), x: W, y: yOf(v) + 4, "text-anchor": "end" }, yG).textContent = t;
+  }
+  const evBins = new Set(inRange.map(m => binOf(m.i))), envBins = new Set(inRange.filter(m => m.kind === "environment").map(m => binOf(m.i)));
+  const w = S.hl && windowOf(S.hl);
+  vals.forEach((v, b) => {
+    const t = ticks[b], ev = evBins.has(b);
+    t.setAttribute("y1", yOf(v)); // an event never changes a bar's height: the leader above it marks it
+    t.setAttribute("class", "tick" + (slo() && v > slo() ? " hot" : "") + (ev ? " ev" : "") + (envBins.has(b) ? " dep" : "") + (w && b >= w[0] && b <= w[1] ? " in" : ""));
+  });
+  stripBox.classList.toggle("hl", !!w);
+  if (w) { band.setAttribute("x", x(w[0]) - 3.5); band.setAttribute("width", x(w[1]) - x(w[0]) + 7); }
+  const ax = $("#axis").children; ax[0].textContent = clock(Date.now() - 3600e3); ax[1].textContent = clock(Date.now() - 1800e3);
+  lblG.innerHTML = "";
+  let edge = Infinity;
+  [...inRange].sort((a, b) => b.i - a.i).forEach(m => {
+    const b = binOf(m.i), xi = x(b), right = xi > PW() - 140, inW = w && b >= w[0] && b <= w[1];
+    const lead = mk("line", { class: "leader", x1: xi, x2: xi, y1: TOP - 14, y2: Math.max(TOP - 14, yOf(vals[b]) - 3) }, lblG);
+    const t = mk("text", { class: "lbl" + (m.kind === "environment" ? " dep" : ""), x: right ? xi - 5 : xi + 5, y: TOP - 15, "text-anchor": right ? "end" : "start" }, lblG);
+    t.textContent = m.label;
+    if (inW) { t.classList.add("in"); lead.classList.add("in"); }
+    const bb = t.getBBox();
+    if (bb.x + bb.width > edge - 10) { t.remove(); lead.remove(); return; }
+    edge = bb.x;
+  });
+}
+let scrubX = null, kbBin = null;
+function scrub(e) { scrubX = e.clientX; const r = strip.getBoundingClientRect(); scrubBin(clamp(Math.round((e.clientX - r.left) / (r.width * PW() / W) * (B - 1)), 0, B - 1)); }
+function scrubBin(b) {
+  if (!hair || !D) return; // the strip isn't built yet
+  const r = strip.getBoundingClientRect();
+  hair.setAttribute("x1", x(b)); hair.setAttribute("x2", x(b)); hair.style.opacity = 1;
+  const i = Math.min(N - 1, Math.floor((b + 1) * N / B) - 1), bucket = series()[i];
+  const ro = $("#readout");
+  ro.textContent = bucket ? `${clock(tAt(i))} · p99 ${bucket.p99_ms.toFixed(0)} ms · ${bucket.requests.toLocaleString()} req` : `${clock(tAt(i))} · no data`;
+  if (!S.hl) markStories(tAt(i));
+  const half = ro.offsetWidth / 2 + 2; ro.style.left = `${clamp(x(b) * r.width / W, half, r.width - half)}px`;
+  stripBox.setAttribute("aria-valuetext", ro.textContent);
+  stripBox.classList.add("scrub");
+}
+const endScrub = () => { stripBox.classList.remove("scrub"); if (hair) hair.style.opacity = 0; if (!S.hl) markStories(); };
+stripBox.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const evBins = [...new Set(marks.filter(m => m.i >= 0).map(m => binOf(m.i)))].sort((a, b) => a - b);
+  const cur = kbBin ?? B - 1; let b = null;
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") b = cur + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 10 : 1);
+  else if (e.key === "Home") b = 0; else if (e.key === "End") b = B - 1;
+  else if (e.key === "[") b = [...evBins].reverse().find(v => v < cur) ?? cur;
+  else if (e.key === "]") b = evBins.find(v => v > cur) ?? cur;
+  else if (e.key === "Enter") { const hit = $("#stories .story.on"); if (hit) { e.preventDefault(); hit.focus(); hit.scrollIntoView({ block: "nearest" }); } return; }
+  if (b == null) return;
+  e.preventDefault(); e.stopPropagation(); kbBin = clamp(b, 0, B - 1); scrubX = null; scrubBin(kbBin);
+});
+stripBox.addEventListener("focus", () => { if (stripBox.matches(":focus-visible")) { kbBin ??= B - 1; scrubBin(kbBin); } });
+stripBox.addEventListener("blur", () => { kbBin = null; endScrub(); });
+stripBox.addEventListener("pointermove", scrub);
+stripBox.addEventListener("pointerdown", scrub);
+stripBox.addEventListener("pointerleave", () => { scrubX = null; if (kbBin == null) endScrub(); else scrubBin(kbBin); });
+new ResizeObserver(buildStrip).observe(strip);
+
+/* ---------------- stories: told from the audit history ---------------- */
+// Instance names and numbers with units stay on one line: "cp-2", "11.5ms".
+// Stories say times in UTC, for agents and logs; a person reads the page's own clock, as the story's header does.
+const localUTC = t => t.replace(/\b(\d{2}):(\d{2}):(\d{2}) UTC\b/g, (_, h, m, sec) => {
+  const d = new Date(); d.setUTCHours(+h, +m, +sec, 0); if (d - Date.now() > 3600e3) d.setUTCDate(d.getUTCDate() - 1);
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+});
+const keep = t => esc(localUTC(t)).replace(/\b([a-z]+-\d+|[\d.]+\s?(?:ms|s|rps|items|cores|KiB|MiB))\b/g, '<span style="white-space:nowrap">$1</span>');
+const S = { hl: null, stories: [] };
+const who = a => !a ? "" : a === "lease" ? "a lease ending" : a === D?.user ? "you" : String(a).replace(/^(rule|agent|human|fleet):/, (_, k) => k === "human" ? "" : `${k} `);
+// A story's effects (Go's Moved: name, from, to, unit, worse), each with its change; red only when it got worse.
+// No ratio from nothing: "0 → 3.8 MiB/s" says it, where a "−0%" beside it read as no change.
+const pctOf = (from, to) => { if (!from) return ""; const d = (to - from) / from; return Math.abs(d) >= 10 ? `${d > 0 ? "+" : "−"}${Math.round(Math.abs(d))}×` : `${d > 0 ? "+" : "−"}${Math.round(Math.abs(d) * 100)}%`; };
+const fxHTML = s => !s.effects?.length ? "" : `<div class="fx">${s.effects.map(e =>
+  `<span><span class="k">${esc(e.name.replace(/^\S+ \S+ p99$/, "p99"))}</span>${+e.from.toFixed(2)} → ${+e.to.toFixed(2)} ${esc(e.unit)}${e.from !== e.to ? `<span class="d ${e.worse ? "worse" : "better"}">${pctOf(e.from, e.to)}</span>` : ""}</span>`).join("")
+  }${s.after ? `<span class="conf">after ${esc(s.after)}</span>` : ""}${s.confounded?.length ? `<span class="conf" title="${esc(s.confounded.join("; "))}">confounded: other changes in the window</span>` : ""}</div>`;
+// Stories are told by the instance (Instance.Stories), the same sentences an agent reads over MCP.
+function buildStories() {
+  const out = (D.stories || []).map(s => ({
+    id: s.id, kind: s.kind, t: Date.parse(s.at), t0: Date.parse(s.at), t1: Date.parse(s.until), alert: s.alert,
+    src: s.who, title: s.title, parts: s.title_parts, body: s.body, knob: s.knob, lease: s.lease, why: s.why, effects: s.effects, after: s.after, confounded: s.confounded,
+    actions: s.alert && s.kind === "change" && s.knob ? [{ label: "Review", fn: () => openKnob(D.knobs.find(k => k.name === s.knob)) }] : null,
+  }));
+  marks = (D.stories || []).filter(s => s.mark).map(s => ({ t: Date.parse(s.kind === "rule" ? s.until : s.at), label: s.mark, kind: s.kind, i: iAt(Date.parse(s.kind === "rule" ? s.until : s.at)) }));
+  return out;
+}
+const spanOf = s => [s.t0 ?? s.t, s.t1 ?? s.t];
+function windowOf(s) {
+  const [a, b] = spanOf(s);
+  if (b < Date.now() - 3600e3) return null;
+  let b0 = binOf(clamp(iAt(a), 0, N - 1)), b1 = binOf(clamp(iAt(b), 0, N - 1));
+  if (b1 - b0 < 2) { b0 = Math.max(0, b0 - 1); b1 = Math.min(B - 1, b1 + 1); }
+  return [b0, b1];
+}
+function highlight(s) { S.hl = s; drawStrip(); markStories(); }
+function markStories(at) {
+  const tol = 3600e3 / B;
+  const on = s => at != null ? (([a, b]) => at >= a - tol && at <= b + tol)(spanOf(s)) : s === S.hl;
+  let any = false;
+  $("#stories").querySelectorAll(".story").forEach(el => { const hit = on(el._s); el.classList.toggle("on", hit); any ||= hit; });
+  $("#stories").classList.toggle("hl", any);
+}
+const storyEl = s => s && $("#stories").querySelector(`.story[data-sid="${s.id}"]`);
+let activeStory = null, seenStories = new Set();
+function setActiveStory(s) { activeStory = s; $("#stories").querySelectorAll(".story").forEach(el => el.tabIndex = el._s?.id === s?.id ? 0 : -1); }
+function moveStory(d) {
+  const els = [...$("#stories").querySelectorAll(".story")]; if (!els.length) return;
+  const at = els.findIndex(el => el._s?.id === activeStory?.id && el.contains(document.activeElement));
+  const el = els[at < 0 ? 0 : clamp(at + d, 0, els.length - 1)];
+  el.focus(); el.scrollIntoView({ block: "nearest", behavior: REDUCED ? "auto" : "smooth" });
+}
+function storyText(s) { return `${D.service} · ${clock(s.t)}${s.src ? ` · ${s.src}` : ""}\n${s.title}\n${s.body}`; }
+async function copyText(text, btn) {
+  try { await navigator.clipboard.writeText(text); } catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  const was = btn.textContent; btn.textContent = "copied"; setTimeout(() => btn.textContent = was, 1200);
+}
+// A title from its parts: who acted, the rule, the knob and its values stand a
+// little apart from the words between them. Without parts, the plain title.
+const titleHTML = s => s.parts?.length ? s.parts.map(p => p.kind ? `<span class="t-${esc(p.kind)}">${esc(p.text)}</span>` : `<span class="t-w">${esc(p.text)}</span>`).join("") : esc(s.title);
+function renderStories() {
+  const stories = S.stories = buildStories();
+  const box = $("#stories"), hadFocus = box.contains(document.activeElement) && document.activeElement.closest(".story")?._s?.id;
+  const sig = JSON.stringify(stories.slice(0, 6).map(s => [s.id, s.title, s.body]));
+  if (sig === box._sig) return; // nothing new: leave the DOM, and the reader's place, alone
+  box._sig = sig; box.innerHTML = "";
+  if (!stories.length) { box.innerHTML = `<div class="empty">Nothing has changed today.</div>`; return; }
+  for (const s of stories.slice(0, 6)) {
+    const el = document.createElement("article");
+    el.className = "story" + (s.alert ? " alert" : "");
+    el.innerHTML = `<div class="when"><span class="dot"></span><span class="wt"><span class="num">${clock(s.t)}</span>${s.src ? ` <span>· ${esc(s.src)}</span>` : ""}</span><button class="copy" tabindex="-1" aria-label="Copy this story as text (c)">copy</button></div>
+      <h3>${titleHTML(s)}</h3>${s.why ? `<p class="swhy">${keep(s.why)}</p>` : ""}${fxHTML(s)}${s.body && s.body !== s.why && s.body !== `“${s.why}”` ? `<p class="detail">${keep(s.body)}</p><button class="more" tabindex="-1">more</button>` : ""}${s.actions ? `<div class="actions">${s.actions.map((a, i) => `<button class="btn ${i ? "quiet" : "ink"}" data-a="${i}">${a.label}<span class="kbd">${i ? "x" : "↵"}</span></button>`).join("")}</div>` : ""}`;
+    s.actions?.forEach((a, i) => el.querySelector(`[data-a="${i}"]`).onclick = a.fn);
+    el.querySelector(".copy").onclick = e => copyText(storyText(s), e.currentTarget);
+    const mo = el.querySelector(".more"); if (mo) mo.onclick = () => { el.classList.toggle("open"); mo.textContent = el.classList.contains("open") ? "less" : "more"; };
+    el._s = s; el.dataset.sid = s.id; el.setAttribute("role", "listitem");
+    el.onpointerdown = e => el._pt = e.pointerType;
+    el.onpointerenter = e => e.pointerType === "mouse" && highlight(s);
+    el.onpointerleave = e => e.pointerType === "mouse" && highlight(null);
+    el.onfocus = () => el.matches(":focus-visible") && highlight(s);
+    el.onblur = () => S.hl?.id === s.id && highlight(null);
+    el.onclick = e => { if (e.target.closest("button") || el._pt === "mouse") return; highlight(S.hl?.id === s.id ? null : s); };
+    el.addEventListener("focusin", () => setActiveStory(s));
+    box.appendChild(el);
+    if (!seenStories.has(s.id) && seenStories.size) spring(el, { opacity: [0, 1], transform: ["translateY(-8px)", "translateY(0px)"] }, { d: .45 });
+  }
+  stories.forEach(s => seenStories.add(s.id));
+  setActiveStory(stories.find(s => s.id === activeStory?.id) || stories[0]);
+  if (hadFocus) storyEl(stories.find(s => s.id === hadFocus) || activeStory)?.focus({ preventScroll: true });
+  const all = document.createElement("button"); all.className = "copy copyall"; all.textContent = "copy today as text, oldest first";
+  all.onclick = () => copyText([...stories].reverse().map(storyText).join("\n\n"), all);
+  box.appendChild(all);
+}
+
+/* ---------------- knobs ---------------- */
+function metaOf(k) {
+  const top = k.stack[0], by = who(top.by);
+  if (top.layer === "default") return "";
+  if (top.layer === "pin") return `pinned by ${by}`;
+  if (top.layer === "rule") return top.by.replace("rule:", "rule ");
+  return by.startsWith(`${top.layer} `) ? by : `${top.layer} · ${by}`; // "agent oncall", not "agent · agent oncall"
+}
+// Leases count down here, every second, from when the state said how long was left; a freeze holds them.
+const leftText = ms => { const t = Math.ceil(ms / 1000); return t <= 0 ? "ending" : t < 60 ? `${t}s left` : t < 3600 ? `${Math.floor(t / 60)}m ${String(t % 60).padStart(2, "0")}s left` : `${Math.floor(t / 3600)}h ${Math.floor(t % 3600 / 60)}m left`; };
+const endsHTML = e => !e?.ends_in ? "" : D.freeze.frozen ? " · held" : ` · <span class="left" data-end="${Date.now() + durMs(e.ends_in)}">${leftText(durMs(e.ends_in))}</span>`;
+function tickLeases() {
+  const now = Date.now();
+  document.querySelectorAll("[data-end]").forEach(el => {
+    const left = +el.dataset.end - now;
+    if (el.dataset.total) el.firstElementChild.style.width = `${clamp(left / +el.dataset.total, 0, 1) * 100}%`;
+    else el.textContent = leftText(left);
+  });
+}
+setInterval(tickLeases, 1000);
+const LAYERS = ["default", "fleet", "agent", "rule", "pin"];
+// The layer stack, drawn: one square per layer, outlined where a layer holds a value, filled for the one in effect.
+const stackMark = k => `<span class="stk" title="${esc(LAYERS.map(l => `${l}${k.stack.some(s => s.layer === l) ? ` ${show(k, k.stack.find(s => s.layer === l).value)}` : ""}`).join(" · "))}">${LAYERS.map(l =>
+  `<i class="${k.stack[0].layer === l ? "win" : k.stack.some(s => s.layer === l) ? "has" : ""}"></i>`).join("")}</span>`;
+// How much of the lease is left, from the change that took it out.
+// A lease's whole length, from the change that took it out, for the line that drains.
+function leaseTotal(k) {
+  const top = k.stack[0]; if (!top.ends_in || !top.lease) return 0;
+  const e = [...(D.history || [])].reverse().find(e => e.fields?.lease_id === top.lease && e.fields?.lease);
+  return e ? durMs(e.fields.lease) : 0;
+}
+// The levers: when something runs short, the knobs that use it, what helped before first, then the most expensive.
+function levers() {
+  const out = [];
+  for (const p of D.pressures || []) for (const l of p.levers) if ((l.position > 0 || l.observed) && !out.some(x => x.knob === l.knob))
+    out.push({ ...l, resource: p.resource, why: p.why });
+  return out;
+}
+let knobOrder = []; // as listed, so 1-9 open what you see
+function renderKnobs() {
+  const list = $("#knobList"), had = document.activeElement?.closest?.("#knobList .row")?.dataset.k;
+  const ls = levers(), lev = Object.fromEntries(ls.map(l => [l.knob, l]));
+  const order = [...ls.map(l => D.knobs.find(k => k.name === l.knob)).filter(Boolean), ...D.knobs.filter(k => !lev[k.name])];
+  const sig = JSON.stringify([ls, order.map(k => [k.name, k.value, metaOf(k), k.stack.map(s => s.layer), k.stack[0].lease]), D.freeze.frozen]);
+  if (sig === list._sig) return;
+  // Under the pointer the list doesn't move: memory running short reorders it and adds lines, and in a crash
+  // loop that came and went under an operator's click, which opened the knob below the one aimed at. Values
+  // still roll in place; the list is rebuilt once the pointer leaves.
+  if (list.matches(":hover") && list._sig) {
+    for (const r of list.querySelectorAll(".row")) { const k = D.knobs.find(x => x.name === r.dataset.k), v = r.querySelector(".v"); if (k && v) roll(v, show(k, k.value)); }
+    list.onmouseleave = () => { list.onmouseleave = null; renderKnobs(); };
+    return;
+  }
+  list._sig = sig; knobOrder = order;
+  const before = Object.fromEntries([...list.querySelectorAll(".row")].map(r => [r.dataset.k, r.querySelector(".v")?._t]));
+  list.innerHTML = "";
+  if (!D.knobs.length) { list.innerHTML = `<div class="empty">No knobs yet. A knob is a setting people, agents and rules can change while the service runs, within a range you declare.</div>`; return; }
+  // What runs short goes in the frame's title, not a line above the list: a line that came and went with
+  // memory pressure moved every knob under an operator's pointer.
+  $("#knobFirst").textContent = ls.length ? ` · ${[...new Set(ls.map(l => l.resource.toUpperCase()))].join(" AND ")} FIRST` : "";
+  knobOrder.forEach((k, n) => {
+    const l = lev[k.name], meta = [l && (l.observed || (l.position >= .99 ? "at its most expensive" : `${Math.round(l.position * 100)}% toward its most expensive`)), metaOf(k)].filter(Boolean).join(" · ");
+    const total = leaseTotal(k), b = document.createElement("button");
+    b.className = "row" + (l ? " lever" : ""); b.dataset.k = k.name; b.dataset.v = String(k.value);
+    if (!l && n === ls.length && ls.length) list.insertAdjacentHTML("beforeend", `<div class="levsep"></div>`);
+    const held = k.stack[0].layer !== "default" || meta; // a default knob is just its name and value
+    b.innerHTML = `<span><span class="name">${esc(k.name)}</span>${held ? `<br>${k.stack[0].layer !== "default" ? stackMark(k) : ""}<span class="meta live">${esc(meta)}${endsHTML(k.stack[0])}</span>` : ""}${total ? `<span class="lease"${D.freeze.frozen ? "" : ` data-end="${Date.now() + durMs(k.stack[0].ends_in)}" data-total="${total}"`}><i style="width:${(clamp(durMs(k.stack[0].ends_in) / total, 0, 1) * 100).toFixed(1)}%"></i></span>` : ""}</span>
+      <span class="val num"><span class="v"></span>${k.unit ? `<small>${esc(k.unit)}</small>` : ""}</span>${n < 9 ? `<span class="kbd">${n + 1}</span>` : ""}<span class="chev">→</span>`;
+    const v = b.querySelector(".v");
+    if (before[k.name] != null) { v._t = before[k.name]; v.innerHTML = `<span class="roll">${[...before[k.name]].map(c => `<span class="ch"><span>${glyph(c)}</span></span>`).join("")}</span>`; }
+    roll(v, show(k, k.value));
+    b.onclick = () => openKnob(D.knobs.find(x => x.name === k.name), l ? { reason: `${l.resource.toUpperCase()}: ${l.why}` } : {});
+    list.appendChild(b);
+  });
+  if (had) list.querySelector(`.row[data-k="${had}"]`)?.focus({ preventScroll: true });
+}
+
+/* ---------------- rules ---------------- */
+function renderRules() {
+  const box = $("#rules");
+  const sig = JSON.stringify(D.rules.map(r => [r.name, r.state, r.stalls, Math.round(r.signal * 10), r.warning, r.moves, r.err, r.aside]));
+  if (sig === box._sig) return; box._sig = sig;
+  if (!D.rules.length) { box.innerHTML = `<div class="empty">${D.knobs.length ? "No rules run here." : "No rules yet. A rule moves a knob when a measure crosses a line, so it comes after a knob."}</div>`; return; }
+  // Every state says what the rule does and whether it's doing it; a rule that isn't reading shows no reading.
+  const STATE = { acting: "Acting", watching: "Watching", holding: "Holding", shadow: "Would act (shadow)", stalled: "Stalled", stopped: "Stopped by vis", disabled: "Off", error: "Can't act", aside: "Stands aside" };
+  const off = r => r.state === "disabled" || r.state === "stopped";
+  const reading = r => off(r) ? "" : ` · now <b>${+(+r.signal).toPrecision(3)} ${esc(r.unit || "")}</b>`;
+  const story = r => (S.stories || []).find(s => s.kind === "rule" && s.alert && s.title.includes(r.name));
+  const seeAlso = r => { const s = story(r); return s ? ` · <button class="see" data-sid="${esc(s.id)}">see ${clock(s.t)}</button>` : ""; };
+  box.innerHTML = D.rules.map(r => `<div class="rule ${r.state}"><span class="name">${esc(r.name)}</span>
+    <button data-r="${esc(r.name)}" data-on="${off(r)}">${off(r) ? "Switch on" : "Switch off"}</button>
+    <span class="st"><b>${STATE[r.state] || esc(r.state)}</b>${r.state === "stopped" ? seeAlso(r) : ` · acts when ${esc(r.signal_name || "signal")} &gt; ${r.limit} ${esc(r.unit || "")}${reading(r)}`}${r.stalls ? ` · ${r.stalls} stalls` : ""}</span>
+    <span class="meta">${esc(r.action || "moves")} on ${esc(r.knob)}${r.moves ? ` within ${esc(r.moves)}` : ""}${r.aside ? ` · ${esc(r.aside)}` : ""}${r.warning ? ` · <button class="see" data-notes>may not help</button>` : ""}</span></div>`).join("");
+  box.querySelectorAll("button.see:not([data-notes])").forEach(b => b.onclick = () => { const el = $(`.story[data-sid="${b.dataset.sid}"]`); if (!el) return; el.focus(); el.scrollIntoView({ block: "center", behavior: REDUCED ? "auto" : "smooth" }); highlight(el._s); });
+  box.querySelectorAll("button[data-r]").forEach(b => b.onclick = async () => {
+    const enable = b.dataset.on === "true";
+    try { await api("/api/rule", { rule: b.dataset.r, enabled: enable, reason: enable ? "re-enabled from the UI" : "disabled from the UI" }); toast(`Rule ${b.dataset.r} ${enable ? "enabled" : "disabled"}.`); refresh(); }
+    catch (e) { toast(e.message); }
+  });
+}
+
+/* ---------------- routes: one row each, the worst first; the strip shows the one picked ---------------- */
+let showAllRoutes = false;
+function spark(r) {
+  const h = r.history || [], n = 60, step = Math.max(1, Math.floor(h.length / n)), pts = [];
+  for (let i = 0; i < h.length; i += step) pts.push(Math.max(...h.slice(i, i + step).map(b => b.p99_ms)));
+  const top = Math.max(sloOf(r) * 2, ...pts) || 1, y = v => 17 - Math.min(v, top) / top * 16;
+  return `<svg class="sp" viewBox="0 0 96 18" preserveAspectRatio="none">${sloOf(r) ? `<line x1="0" x2="96" y1="${y(sloOf(r))}" y2="${y(sloOf(r))}"/>` : ""}<polyline points="${pts.map((v, i) => `${(i / Math.max(1, pts.length - 1) * 96).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}"/></svg>`;
+}
+function renderRoutes() {
+  const rs = rankedRoutes(), fr = $("#routesFrame");
+  fr.hidden = rs.length < 2; if (fr.hidden) return;
+  const cap = 6, shown = showAllRoutes ? rs : rs.slice(0, cap), cur = route()?.route;
+  const sig = JSON.stringify([cur, showAllRoutes, shown.map(r => [r.route, Math.round(r.now?.p99_ms || 0)])]);
+  const box = $("#routes"); if (sig === box._sig) return; box._sig = sig;
+  box.innerHTML = shown.map(r => { const [m, ...p] = r.route.split(" "); return `<button class="rt ${strain(r) > 1 ? "hot" : ""} ${r.route === cur ? "on" : ""}" data-route="${esc(r.route)}">
+    <span class="rn">${p.length ? `<i>${esc(m)}</i>${esc(p.join(" "))}` : esc(m)}</span>${spark(r)}<span class="v">${r.now?.p99_ms != null ? `${r.now.p99_ms.toFixed(0)} ms` : "–"}</span><span class="q">${sloOf(r) ? `${sloOf(r)} ms` : "none"}</span></button>`; }).join("");
+  box.querySelectorAll(".rt").forEach(b => b.onclick = () => { pickedRoute = b.dataset.route === rankedRoutes()[0].route ? null : b.dataset.route; render(); });
+  const over = rs.filter(r => strain(r) > 1).length, rest = rs.length - shown.length, judged = rs.filter(sloOf).length;
+  const verdict = over ? `${over} of ${judged} with an SLO over it` : judged === rs.length ? `all ${rs.length} within their SLO` : judged ? `${judged} of ${rs.length} have an SLO, all within it` : "no SLOs yet";
+  $("#rtmore").innerHTML = `${verdict}${rest > 0 ? ` · <button id="allRoutes">all ${rs.length}</button>` : showAllRoutes ? ` · <button id="allRoutes">fewer</button>` : ""}`;
+  $("#allRoutes")?.addEventListener("click", () => { showAllRoutes = !showAllRoutes; renderRoutes(); });
+}
+
+/* ---------------- instance ---------------- */
+function renderInstance() {
+  const rt = D.runtime, hot = rt.cpu_limit && rt.throttled > .25;
+  $("#instLabel").textContent = fleetOn() ? "FLEET" : "INSTANCE";
+  $("#fleetBtn").closest(".frame").hidden = fleetOn(); // the dock's strip is this frame, at the bottom
+  if (fleetOn()) { // a square per member: red if it stands out, dashed if not heard from, ringed if it's this page's
+    const f = D.fleet, out = new Set((f.stand_out || []).map(x => x.member)), alive = f.members.filter(m => m.state === "alive").length;
+    $("#dots").innerHTML = f.members.map(m => `<i class="${[out.has(m.name) && "hot", m.state !== "alive" && "gone", m.self && "me"].filter(Boolean).join(" ")}" title="${esc(m.name)}${m.self ? " (here)" : ""}: ${esc(m.state)}"></i>`).join("");
+    $("#fleetTxt").textContent = `${alive} of ${f.members.length} alive${out.size ? ` · ${andList([...out])} ${out.size > 1 ? "stand" : "stands"} out` : ""}`;
+    return;
+  }
+  $("#dots").innerHTML = `<i class="${hot ? "hot" : ""}"></i>`;
+  $("#fleetTxt").textContent = rt.cpu_limit ? `CPU ${rt.cpu_used.toFixed(2)}/${rt.cpu_limit}${rt.throttled > .01 ? ` · throttled ${Math.round(rt.throttled * 100)}%` : ""}` : `scheduler p99 ${rt.sched_p99_ms.toFixed(1)} ms`;
+}
+// Every signal goes by the name rules, stories and agents use for it; the plain-language line sits beneath.
+// Runtime first (vis reads these from Go and the container), then what the service declares.
+// Setup notes: things the service's code should change (a rule whose knob can't help, knobs read outside
+// vis.HTTP, an SLO whose route never serves). They're for whoever owns the code, so they sit in the
+// instance sheet; the scope line links to them.
+const codeIn = t => esc(t).replace(/(vis\.\w+(?:\(vis\.\w+\))?)/g, "<code>$1</code>");
+const notes = (st = D) => [...(st.warnings || []).map(w => codeIn(w)), ...(st.rules || []).filter(r => r.warning).map(r => `<b>${esc(r.name)}</b>: ${codeIn(r.warning)}`)];
+const sig3 = v => Math.abs(v) >= 1000 ? Math.round(v).toLocaleString() : +v.toPrecision(3);
+$("#fleetBtn").onclick = () => fleetOn() ? openDock() : showInstance();
+// The open dock depends on the fleet's state. With members in trouble it opens on them: each with its verdict in
+// a line and only the signals that are bad, beside what the rest have. The healthy ones, or the whole fleet when
+// all are well, are one quiet table: a row per member, the same few columns, no rules.
+function fleetStatus() {
+  const f = D.fleet, so = new Set((f.stand_out || []).map(x => x.member));
+  const cap = t => t ? t[0].toUpperCase() + t.slice(1) : t, who = t => t.replace(/\b(agent|human|rule):(?=\S)/g, "$1 ");
+  const s0 = [...(f.slos || [])].sort((a, b) => (a.met - b.met) || (b.fleet_p99_ms / b.objective_ms) - (a.fleet_p99_ms / a.objective_ms))[0];
+  const p99 = m => (m.slos || []).find(x => x.route === s0?.route);
+  const silent = m => m.unaccounted || m.state !== "alive";
+  const short = m => (m.pressures || []).some(p => p.resource === "memory"), dying = m => m.restarts > 0 && m.died;
+  const sick = m => silent(m) || so.has(m.name) || p99(m)?.met === false || m.throttled > .25 || (m.lost || []).length > 0 || dying(m) || short(m);
+  // The worst first: dying again and again, over the objective, out of CPU, short of memory, what a restart dropped, the silent.
+  // A member dying again and again stays first while it is down between deaths: the order held still under the pointer.
+  const rank = m => looping(m) ? 0 : silent(m) ? 5 : p99(m)?.met === false ? 1 : m.throttled > .25 ? 2 : short(m) ? 3 : 4;
+  const mib = m => m.mem_limit_mb ? `${m.mem_used_mb} of ${m.mem_limit_mb} MiB` : m.mem_used_mb ? `${m.mem_used_mb} MiB` : null;
+  const bad = f.members.filter(sick).sort((a, b) => rank(a) - rank(b)), well = f.members.filter(m => !sick(m));
+  const rest = (vals, fmt) => { const v = [...new Set(vals.filter(x => x != null))].sort((a, b) => a - b);
+    return !v.length ? "" : v.length === 1 || fmt(v[0]) === fmt(v.at(-1)) ? fmt(v[0]) : `${fmt(v[0])} to ${fmt(v.at(-1))}`; };
+  const name = m => silent(m) ? `<span class="n">${esc(m.name)}</span>` : `<button class="n" data-member="${esc(m.name)}" title="${esc(m.name)}'s runtime and signals">${esc(m.name)}</button>`;
+  // One row of evidence: the signal, its value here, what the rest have (and why, when its last change says).
+  const sig = (label, v, ref) => `<div class="sg"><code>${label}</code><span class="v">${v}</span><span class="ref">${ref}</span></div>`;
+  const member = m => {
+    const s = p99(m), rows = [];
+    let verdict;
+    if (silent(m)) {
+      const miss = (f.missing || []).find(x => x.startsWith(m.name + ":"))?.slice(m.name.length + 1).trim().replace(/\.$/, "");
+      verdict = m.state === "alive" ? "No numbers from it yet." : `${esc(cap((miss || "not heard from").replace(/^dead: /, "")))}. It may still be taking traffic.`;
+    } else {
+      const over = s && !s.met, hot = m.throttled > .25;
+      const upFor = (m.restarted || "").replace(/(\d+)m\d+s/, "$1 min");
+      const died = dying(m) ? `${m.restarts > 1 ? `Restarted ${m.restarts} times in 10 minutes` : `Restarted ${upFor} ago`}, ${esc(m.died)}${m.restarts > 1 && !looping(m) ? (short(m) ? `, and running short again${m.mem_limit_in && m.mem_limit_in !== "now" ? `: at the limit in about ${esc(m.mem_limit_in)}` : ""}` : `; up ${upFor} since the last`) : ""}` : "";
+      verdict = died ? `${died}${over ? ", and over the SLO" : ""}.` : over ? `Over the SLO${well.length ? " while the rest meet it" : ""}${hot ? ", and out of CPU" : ""}.` : hot ? "Out of CPU." : short(m) ? `Running short of memory${m.mem_limit_in === "now" ? ": at the limit" : m.mem_limit_in ? `: at the limit in about ${esc(m.mem_limit_in)}` : ""}.` : (m.lost || []).some(l => !l.unkept) ? "Lost what was set on it at runtime." : "Stands out from the rest.";
+      const lc = (m.last_change || "").replace(/: its numbers here.*$/, ""), lcKnob = lc.split(" ")[0];
+      let lcUsed = false;
+      const theRest = (vals, fmt) => { const r = rest(vals, fmt); return r ? `the rest ${r}` : ""; }; // nothing healthy to compare with: say nothing
+      const soon = m.mem_limit_in && !(/min/.test(m.mem_limit_in) && parseInt(m.mem_limit_in) > 60); // past an hour, a forecast is noise
+      if (mib(m) && (dying(m) || short(m))) rows.push(sig("memory", `${mib(m)}${m.mem_limit_in === "now" ? " · at the limit" : soon ? ` · limit in ${esc(m.mem_limit_in)}` : ""}`, theRest(well.map(x => x.mem_used_mb || null), v => `${v} MiB`)));
+      if (over) rows.push(sig("p99", dur(s.p99_ms), theRest(well.map(x => p99(x)?.p99_ms), dur)));
+      if (m.throttled > .1) rows.push(sig("cpu.throttled", `${Math.round(m.throttled * 100)}%`, theRest(well.map(x => Math.round(x.throttled * 100)), v => `${v}%`)));
+      let differs = 0;
+      for (const d of f.differ || []) { // what is different about it (a cause), not what its own rules did about it
+        const set = d.set_by?.[m.name] || "", odd = oddOut(d, m.name);
+        if (odd == null || set.startsWith("rule:")) continue;
+        differs++;
+        const colon = lc.indexOf(": "), why = d.what === lcKnob ? ` · ${esc(who(colon < 0 ? lc.replace(new RegExp(`^${d.what} `), "") : lc.slice(colon + 2)))}` : "";
+        if (why) lcUsed = true;
+        rows.push(sig(esc(d.what === "cpu_limit" ? "cpu.limit" : d.what), esc(d.values[m.name]), `the rest ${esc(odd)}${why}`));
+      }
+      for (const l of m.lost || []) rows.push(l.unkept ? sig(esc(l.knob), "not set back", `${esc(l.value)}, ${esc(who(l.by))}'s, kept: the process vis set it back on died within a minute, so it may be what kills it`)
+        : sig(esc(l.knob), "lost", `was ${esc(l.value)}, ${esc(who(l.by))}'s, until a restart dropped it`));
+      // Short of memory alone, set like the rest, who hold: a leak. No knob explains it.
+      if (short(m) && !differs && well.length) rows.push(`<p class="aside">Same build, CPU limit and knobs as the rest, which hold: what grows here isn't a setting. A heap profile of ${esc(m.name)} says what holds its memory.</p>`);
+      if (m.from_gossip) rows.push(`<p class="aside">From its gossip, ${esc(m.from_gossip)} old: it didn't answer.</p>`);
+      if (lc && !lcUsed && !f.members.every(x => (x.last_change || "").split(",")[0] === (m.last_change || "").split(",")[0])) rows.push(`<p class="aside">Last change: ${esc(who(lc))}.</p>`);
+    }
+    const sure = DK.forget === m.name;
+    const act = m.state === "dead" ? `<button class="act${sure ? " sure" : ""}" data-forget="${esc(m.name)}" title="Drop ${esc(m.name)} from the fleet, if it is gone for good">${sure ? `Forget ${esc(m.name)}? Tap again` : "Forget"}</button>` : "";
+    return `<i class="g">${silent(m) ? "×" : "!"}</i><span class="nm">${name(m)}${m.self ? `<small>here</small>` : ""}</span><div class="c"><p class="vd">${verdict}${act}</p>${rows.join("")}</div>`;
+  };
+  // The healthy ones: one row each, the same columns, aligned with the evidence above.
+  const healthy = ms => `<i class="g"></i><span class="nm"></span><div class="c tbh"><span>P99</span><span>CPU</span><span>THROTTLED</span><span>HOLDS</span><span>CHANGED</span></div>` + ms.map(m => {
+    const s = p99(m), held = (m.held || []).filter(h => !h.by?.startsWith("rule:")).map(h => `<span class="hv">${esc(h.knob)} ${esc(h.value)}</span>${h.ends_in ? `<small> ${esc(h.ends_in.replace(/(\d+)m\d+s/, "$1m"))} left</small>` : ""}`).join(", ");
+    const last = (m.last_change || "").replace(/: its numbers here.*$/, "").match(/, ([^,]*) ago$/);
+    return `<i class="g"></i><span class="nm">${name(m)}${m.self ? `<small>here</small>` : ""}${m.from_gossip ? `<small>from gossip, ${esc(m.from_gossip)} old</small>` : ""}</span><div class="c tbr"><span>${s ? dur(s.p99_ms) : ""}</span><span>${m.cpu_used.toFixed(2)}<small> of ${m.cpu_limit || "-"}</small></span><span>${Math.round(m.throttled * 100)}%</span><span class="h">${held || "<small>defaults</small>"}</span><span><small>${last ? `${esc(last[1].replace(/(\d+)m\d+s/, "$1m"))} ago` : ""}</small></span></div>`;
+  }).join("");
+  // Below: what every member shares (which no comparison shows), and what was last done about the fleet.
+  const common = (f.common || []).map(c => `<i class="g"></i><span class="nm"></span><div class="c"><p class="ln">${esc(cap(who(c)))}.</p></div>`).join("");
+  const lr = f.last_rollout;
+  let roll = "";
+  if (lr) {
+    const agoS = Math.max((Date.now() - Date.parse(lr.at)) / 1000, 0), ago = agoS < 90 ? `${Math.round(agoS)} s ago` : `${Math.round(agoS / 60)} min ago`;
+    const unmeasured = (lr.result || []).filter(r => /: not measured/.test(r)).length, measured = (lr.result || []).length - unmeasured;
+    const ended = lr.outcome === "done" ? (lr.state === "measured" ? (unmeasured ? `done, ${measured} of ${measured + unmeasured} members measured` : "done, every member measured") : lr.state === "measuring stage 2" ? "done, still measuring stage 2" : "done")
+      : lr.state === "running" ? "running" : lr.state === "writing stage 2" ? "stage 1 passed, still writing stage 2" : `${lr.outcome}${lr.why ? `: ${lr.why}` : ""}`;
+    const bad = ["stopped", "failed", "refused"].includes(lr.outcome) || lr.state.startsWith("unknown");
+    // Each member's own p99 and throttling, before and after: the result rows say more, for agents.
+    const rows = (lr.result || []).map(r => { const n = r.slice(0, r.indexOf(":")), p = r.match(/p99 (\S+) → (\S+) ms/), t = r.match(/throttled (\S+%) → (\S+%)/), miss = r.match(/: not measured(?: \((.*)\))?/);
+      return `<i class="g"></i><span class="nm"><span class="n plain">${esc(n)}</span></span><div class="c tbr rr">${miss ? `<span class="nm-miss">not measured${miss[1] ? `: ${esc(miss[1])}` : ""}</span>` : `<span>${p ? `${esc(p[1])} → ${esc(p[2])} ms` : ""}</span><span>${t ? `${esc(t[1])} → ${esc(t[2])}` : ""}</span>`}</div>`; }).join("");
+    const fleet = lr.fleet ? esc(cap(lr.fleet.replace(/ \(before:[^)]*\)/, ""))) + "." : "";
+    roll = `<i class="g">${bad ? "×" : ""}</i><span class="nm"></span><div class="c"><p class="lead"><code>${esc(lr.set)}</code>${lr.by ? `, by ${esc(who(lr.by))}` : ""}, from ${esc(lr.coordinator)}: <span class="${bad ? "bad" : ""}">${esc(ended)}</span>.</p>${fleet ? `<p class="ln">${fleet}</p>` : ""}${(lr.not_reached || []).length ? `<p class="ln bad">Not reached: ${esc(lr.not_reached.join("; "))}.</p>` : ""}</div>${rows ? `<i class="g"></i><span class="nm"></span><div class="c tbh rr"><span>P99</span><span>THROTTLED</span></div>${rows}` : ""}`;
+  }
+  // Each area is a tile, as panes in a tiling window manager: a dotted frame shared with its neighbours, its title
+  // set into the top rule, "+" at the corners.
+  const tile = (title, body, cls = "") => `<div class="tile${cls}"><span class="c tl">+</span><span class="c tr">+</span><span class="c bl">+</span><span class="c br">+</span><span class="label">[ ${title} ]</span><div class="fsg">${body}</div></div>`;
+  const below = (common ? tile("EVERY MEMBER", common) : "") + (roll ? tile(`LAST ROLLOUT <span>· ${esc((() => { const s = Math.max((Date.now() - Date.parse(lr.at)) / 1000, 0); return s < 90 ? `${Math.round(s)} s ago` : `${Math.round(s / 60)} min ago`; })())}</span>`, roll) : "");
+  if (!bad.length) return `<div class="fsw${below ? "" : " one"}">${tile("MEMBERS", healthy(well))}${below}</div>`; // all well: the strip says so; the rows are the fleet
+  return `<div class="fsw">${tile("NEEDS ATTENTION", bad.map(member).join(""), " hot")}${well.length ? tile("THE REST", healthy(well), " rest") : ""}${below}</div>`;
+}
+// A member's name opens its sheet; Forget asks twice.
+function bindFleet(root) {
+  root.querySelectorAll("[data-member]").forEach(b => b.onclick = () => showMember(b.dataset.member));
+  root.querySelectorAll("[data-forget]").forEach(b => b.onclick = async () => {
+    const name = b.dataset.forget;
+    if (DK.forget !== name) { // armed for 5 s; the panel draws it so, refresh or not
+      DK.forget = name; clearTimeout(DK.forgetT); DK.forgetT = setTimeout(() => { DK.forget = null; renderDockBody(false); }, 5000);
+      return renderDockBody(false);
+    }
+    DK.forget = null; clearTimeout(DK.forgetT);
+    try { await api("/api/forget", { member: name, reason: "gone for good: forgotten from the page" }); refresh(); } catch (e) { toast(e.message); renderDockBody(false); }
+  });
+}
+// This instance at a glance: every name a rule can watch with its value, two columns, the out-of-line ones
+// red. What each means is reference, behind one toggle; setup notes are one line until opened.
+function showInstance(toNotes, st = D, inDock = false) {
+  const rt = st.runtime, ns = notes(st), mine = st === D;
+  const u = (v, unit) => `${esc(String(v))}${unit ? `<small>${esc(unit)}</small>` : ""}`;
+  const tile = (name, v, about, bad) => `<div class="tl${bad ? " bad" : ""}"><code>${esc(name)}</code><span class="v">${v}</span>${about ? `<span class="about">${esc(about)}</span>` : ""}</div>`;
+  const fams = {}; // a family of labelled signals (tenant_rps.web, tenant_rps.scan) is one tile
+  for (const x of st.signals || []) { const [f, label] = x.name.split("."); (fams[f] ||= []).push({ ...x, label }); }
+  const declared = Object.entries(fams).map(([f, xs]) => xs.length === 1 && !xs[0].label
+    ? tile(f, xs[0].error ? "error" : u(sig3(xs[0].value), xs[0].unit), xs[0].error || xs[0].about)
+    : tile(f, xs.map(x => `<span class="lv"><em>${esc(x.label)}</em>${u(sig3(x.value), x.unit)}</span>`).join(""), (xs[0].about || "").replace(` ${xs[0].label} `, " each ")));
+  const me = st.fleet?.members?.find(m => m.self)?.name || "";
+  const root = openSheet(`<div class="isheet"><h3 id="sheetTitle" tabindex="-1">${me ? esc(me) : "This instance"}</h3>
+    <div class="desc">${esc(st.service)} at build <span title="${esc(st.build)}">${esc(String(st.build).slice(0, 7))}</span>${me && !mine ? `, seen through ${esc(D.fleet.members.find(m => m.self)?.name || "this page")}` : ""}. Each name is one a rule can watch.</div>
+    <div class="sh">RUNTIME <span>· Go and the container, last 10 s</span></div><div class="tiles">${[
+      tile("cpu.used", u(rt.cpu_used.toFixed(2), rt.cpu_limit ? `of ${rt.cpu_limit}` : "cores"), "CPU in use, in cores: from the container's cgroup, or the process's own where there is none."),
+      tile("cpu.throttled", u(Math.round(rt.throttled * 100), "%"), "Share of scheduling periods in which the container hit its CPU limit and was paused.", rt.throttled > .1),
+      tile("sched.p99", u(sig3(rt.sched_p99_ms), "ms"), "How long runnable goroutines waited for a CPU.", rt.sched_p99_ms > 10),
+      tile("gc.cpu", u((rt.gc_cpu * 100).toFixed(1), "%"), "Share of CPU spent collecting garbage.", rt.gc_cpu > .25),
+      tile("goroutines", u(rt.goroutines.toLocaleString()), "Goroutines alive now."),
+    ].join("")}</div>
+    ${declared.length ? `<div class="sh">${esc(st.service.toUpperCase())} <span>· its own signals</span></div><div class="tiles">${declared.join("")}</div>` : ""}
+    <div class="foot"><button id="meanBtn" aria-pressed="false">What these mean</button>${ns.length ? `<button id="notesBtn">${ns.length} setup note${ns.length > 1 ? "s" : ""}</button>` : ""}${me && !mine ? `<button id="openMember">Work on ${esc(me)} from here</button>` : ""}${fleetOn() ? `<button id="backFleet">The fleet</button>` : ""}</div>
+    ${ns.length ? `<div class="notes" id="notes" hidden><div class="sh">SETUP <span>· for whoever owns the code</span></div>${ns.map(n => `<p>${n}</p>`).join("")}</div>` : ""}</div>`, { wide: true, dock: inDock });
+  const q = x => root.querySelector(x), inst = q(".isheet");
+  q("#meanBtn").onclick = e => { const on = inst.classList.toggle("explain"); e.currentTarget.setAttribute("aria-pressed", on); e.currentTarget.textContent = on ? "Hide what these mean" : "What these mean"; moreBelow(); };
+  const openNotes = () => { q("#notes").hidden = false; q("#notesBtn").remove(); moreBelow(); requestAnimationFrame(() => q("#notes").scrollIntoView({ block: "start", behavior: REDUCED ? "auto" : "smooth" })); };
+  if (ns.length) q("#notesBtn").onclick = openNotes;
+  if (q("#openMember")) q("#openMember").onclick = () => { closeSheet(); closeDock(); view(me); };
+  if (q("#backFleet")) q("#backFleet").onclick = () => openDock();
+  if (toNotes && ns.length) openNotes();
+}
+
+document.addEventListener("click", e => { if (e.target.closest("[data-notes]")) showInstance(true); });
+
+/* ---------------- sheet ---------------- */
+const sheet = $("#sheet"), scrim = $("#scrim");
+const desktop = () => matchMedia("(min-width: 700px)").matches;
+let returnTo = null;
+function openSheet(html, o = {}) {
+  if (o.dock) { // in the fleet panel, in place of the fleet; Esc or "The fleet" leads back
+    DK.view = "member"; DK.html = ""; dockBody.innerHTML = html; dockBody.scrollTop = 0; dockTitle();
+    requestAnimationFrame(() => dockBody.querySelector("h3")?.focus({ preventScroll: true }));
+    return dockBody;
+  }
+  sheet.classList.toggle("wide", !!o.wide);
+  const a = document.activeElement, st = a?.closest?.(".story");
+  returnTo = a?.closest?.(".row")?.dataset.k ? `.row[data-k="${a.closest(".row").dataset.k}"]` : st ? `.story[data-sid="${st.dataset.sid}"]` : a?.id ? `#${a.id}` : null;
+  $("#sheetBody").innerHTML = html; scrim.classList.add("on"); sheet.classList.add("on"); sheet.scrollTop = 0;
+  requestAnimationFrame(moreBelow);
+  $(".page").inert = true;
+  requestAnimationFrame(() => ($("#enc") || $("#sheetBody h3"))?.focus({ preventScroll: true }));
+  if (desktop()) spring(sheet, { opacity: [0, 1], transform: ["translateY(-50%) scale(0.96)", "translateY(-50%) scale(1)"] }, { d: .3, bounce: .1 });
+  else spring(sheet, { transform: ["translateY(100%)", "translateY(0%)"] }, { d: .42, bounce: .1 });
+  return $("#sheetBody");
+}
+// A sheet taller than the screen says so: a visible scrollbar, and a fade at the bottom until the end is reached.
+function moreBelow() { sheet.classList.toggle("more", sheet.scrollTop + sheet.clientHeight < sheet.scrollHeight - 4); }
+sheet.addEventListener("scroll", moreBelow, { passive: true });
+function closeSheet() {
+  if (!sheet.classList.contains("on")) return;
+  scrim.classList.remove("on"); sheet.classList.remove("on");
+  $(".page").inert = dockOpen(); // under an open dock the page stays out of reach
+  if (returnTo) document.querySelector(returnTo)?.focus({ preventScroll: true });
+  if (desktop()) spring(sheet, { opacity: [1, 0], transform: ["translateY(-50%) scale(1)", "translateY(-50%) scale(0.97)"] }, { d: .2, bounce: 0 });
+  else spring(sheet, { transform: [sheet.style.transform || "translateY(0%)", "translateY(110%)"] }, { d: .3, bounce: 0 });
+}
+scrim.onclick = closeSheet;
+// Esc steps back one level: a sheet, then a member's view in the dock (back to the fleet), then the dock.
+addEventListener("keydown", e => { if (e.key !== "Escape") return; if (sheetOpen()) closeSheet(); else if (dockOpen()) DK.view !== "fleet" ? openDock() : closeDock(); });
+{
+  const g = $("#grab"); let y0 = null;
+  g.addEventListener("pointerdown", e => { y0 = e.clientY; g.setPointerCapture(e.pointerId); });
+  g.addEventListener("pointermove", e => { if (y0 != null) sheet.style.transform = `translateY(${Math.max(0, e.clientY - y0)}px)`; });
+  g.addEventListener("pointerup", e => { if (y0 == null) return; const dy = e.clientY - y0; y0 = null; if (dy > 90) closeSheet(); else spring(sheet, { transform: [`translateY(${Math.max(0, dy)}px)`, "translateY(0px)"] }, { bounce: .25 }); });
+}
+
+/* ---------------- dock: the fleet as a panel at the bottom of the page ---------------- */
+// One owner for its state (DK): open or not, which view (the fleet, or a member's sheet), the height the reader
+// set. Every change goes through openDock, closeDock or the height setters; a render writes only what changed,
+// and only a real open or close animates. The open dock covers the page, which dims, blurs and takes no input.
+const dock = $("#dock"), dockBody = $("#dockBody"), dockFact = $("#dockFact"), dockSplit = $("#dockSplit");
+const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } }, lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const STRIP = () => desktop() ? 44 : 52; // the strip's height: the panel when closed
+const DK = { open: false, view: "fleet", h: +lsGet("vis.dock.height") || 0, detent: 1, html: "", strip: "", opener: null, forget: null, toggled: 0 };
+const dockOpen = () => DK.open && !!D && fleetOn();
+const detents = () => [STRIP(), Math.round(innerHeight * .5), Math.round(innerHeight * .92)]; // a phone: peek, half, full
+const maxH = () => Math.round(innerHeight * (desktop() ? .85 : .92));
+const openH = () => desktop() ? Math.min(Math.max(DK.h || Math.round(innerHeight * .66), 200), maxH()) : detents()[DK.detent]; // two thirds, unless dragged
+const dragging = () => dock.classList.contains("dragging");
+function dockApply(h) {
+  h ??= DK.open ? openH() : STRIP();
+  const open = h > STRIP() + 1;
+  document.documentElement.style.setProperty("--dock-h", `${Math.round(h)}px`);
+  dock.classList.toggle("peek", !open);
+  document.body.classList.toggle("dockopen", open && (!dragging() || h >= 160)); // dragging below 160 px, the scrim lifts: let go and it closes
+  dockFact.setAttribute("aria-expanded", String(open));
+  dockSplit.setAttribute("aria-valuemin", String(STRIP())); dockSplit.setAttribute("aria-valuemax", String(maxH())); dockSplit.setAttribute("aria-valuenow", String(Math.round(h)));
+}
+// The dock's title says where it is: the fleet, or a member's sheet in it.
+function dockTitle() { const t = DK.view === "member" ? `[ FLEET · ${dockBody.querySelector("h3")?.textContent || "member"} ]` : "[ FLEET ]"; if ($("#dockTitle").textContent !== t) $("#dockTitle").textContent = t; }
+// Where focus was before the dock opened, to go back to when it closes.
+const focusKey = a => a?.closest?.(".row")?.dataset.k ? `.row[data-k="${a.closest(".row").dataset.k}"]` : a?.closest?.(".story") ? `.story[data-sid="${a.closest(".story").dataset.sid}"]` : a?.id ? `#${a.id}` : null;
+function openDock(view = "fleet") {
+  const was = dockOpen();
+  if (!was) DK.opener = focusKey(document.activeElement);
+  DK.open = true;
+  const back = DK.view !== view;
+  DK.view = view;
+  if (view === "fleet") renderDockBody(!was || back);
+  dockApply(); $(".page").inert = true; dockTitle();
+  if (!was || back) { // a real open, or back from a member: one entrance, the top, focus in the panel
+    dockBody.scrollTop = 0;
+    dockBody.classList.remove("enter"); void dockBody.offsetWidth; dockBody.classList.add("enter");
+    dockBody.focus({ preventScroll: true });
+  }
+}
+function closeDock() {
+  if (!DK.open) return;
+  DK.open = false; DK.view = "fleet"; DK.html = ""; DK.forget = null;
+  dockApply(); dockTitle();
+  if (!sheetOpen()) $(".page").inert = false;
+  const back = DK.opener && document.querySelector(DK.opener);
+  if (back) back.focus({ preventScroll: true }); else document.activeElement?.blur(); // no focus mark left on the strip
+}
+function toggleDock() {
+  if (Date.now() - DK.toggled < 300) return; // a double click doesn't open and close
+  DK.toggled = Date.now();
+  dockOpen() && DK.view === "fleet" ? closeDock() : openDock();
+}
+// The panel's content, written only when it changed: a refresh keeps the reader's focus, selection and scroll.
+// A member's memory changes every second, so the panel is rewritten as often: a write between a press and its
+// release lost the click. Writes wait for the release.
+let dockPressed = false;
+dockBody.addEventListener("pointerdown", () => { dockPressed = true; });
+addEventListener("pointerup", () => { if (dockPressed) { dockPressed = false; setTimeout(() => renderDockBody()); } }, true);
+function renderDockBody(force) {
+  if (DK.view !== "fleet") return;
+  const html = `<div class="fs">${fleetStatus()}</div>`;
+  if (!force && html === DK.html || dockPressed) return;
+  const top = dockBody.scrollTop, a = document.activeElement;
+  const keep = a && dockBody.contains(a) ? (a.dataset.member ? `[data-member="${a.dataset.member}"]` : a.dataset.forget ? `[data-forget="${a.dataset.forget}"]` : null) : null;
+  dockBody.innerHTML = html; DK.html = html; dockBody.scrollTop = top;
+  if (keep) dockBody.querySelector(keep)?.focus({ preventScroll: true });
+  bindFleet(dockBody);
+}
+// The strip: a glyph per member (■ stands out, □ fine, × not heard from), "!" when something is out of line, the
+// fleet's number (red ink only when it is over its objective), who stands out. The frame's title goes red with it.
+function renderStrip() {
+  const f = D.fleet, out = new Set((f.stand_out || []).map(x => x.member)), names = [...out];
+  const slos = [...(f.slos || [])].sort((a, b) => (a.met - b.met) || (b.fleet_p99_ms / b.objective_ms) - (a.fleet_p99_ms / a.objective_ms)), s0 = slos[0];
+  const covers = (f.covers || "").split(";")[0].trim(), over = slos.some(s => !s.met), alert = names.length > 0 || over;
+  dock.classList.toggle("over", over);
+  const who = names.length ? `${andList(names)} ${names.length > 1 ? "stand" : "stands"} out` : over ? "over the SLO" : slos.length ? "all within the SLO" : "none stands out";
+  const marks = f.members.map(m => { const dead = m.unaccounted || m.state !== "alive", hot = out.has(m.name);
+    return `<span class="${(dead || hot) ? "b" : ""}" title="${esc(m.name)}${m.self ? " (here)" : ""}: ${esc(m.state)}">${dead ? "×" : hot ? "■" : "□"}</span>`; }).join("");
+  const n = covers.replace(" members", "");
+  const html = `<span class="marks">${marks}</span><span class="txt">${alert ? `<span class="bang">!</span> ` : ""}${s0 ? `<b class="num${over ? " hot" : ""}">${dur(s0.fleet_p99_ms)}</b> across ${esc(n)}` : esc(n)} · ${esc(who)}</span>`;
+  if (html !== DK.strip) { dockFact.innerHTML = html; DK.strip = html; }
+}
+$("#dockScrim").addEventListener("click", () => closeDock());
+function renderDock() {
+  const on = fleetOn();
+  document.body.classList.toggle("docked", on);
+  if (!on) { if (DK.open) closeDock(); return; }
+  renderStrip();
+  if (!dragging()) dockApply(); // a drag in progress holds its height across a refresh
+  if (DK.open) renderDockBody(false);
+}
+// Dragging the strip or the splitter sets the height; a tap on the strip opens or closes. On a phone it
+// snaps to the nearest detent; on a desktop any height, and below 160 px it closes.
+function dockDrag(el) {
+  let y0 = null, h0 = 0, moved = false;
+  el.addEventListener("pointerdown", e => { if (e.button) return; y0 = e.clientY; h0 = dock.getBoundingClientRect().height; moved = false; el.setPointerCapture(e.pointerId); });
+  el.addEventListener("pointermove", e => {
+    if (y0 == null) return;
+    const dy = y0 - e.clientY;
+    if (!moved && Math.abs(dy) < 5) return;
+    if (!moved) { moved = true; dock.classList.add("dragging"); document.body.classList.add("dragging"); if (!DK.html && DK.view === "fleet") renderDockBody(true); }
+    dockApply(Math.max(STRIP(), Math.min(maxH(), h0 + dy)));
+  });
+  const end = () => {
+    if (y0 == null) return; y0 = null;
+    const h = dock.getBoundingClientRect().height;
+    dock.classList.remove("dragging"); document.body.classList.remove("dragging");
+    if (!moved) { if (el === dockFact) toggleDock(); return; }
+    if (desktop()) { if (h < 160) closeDock(); else { DK.h = Math.round(h); lsSet("vis.dock.height", String(DK.h)); dockOpen() ? dockApply() : openDock(); } }
+    else { const i = detents().map((d, i) => [Math.abs(d - h), i]).sort((a, b) => a[0] - b[0])[0][1]; if (i === 0) closeDock(); else { DK.detent = i; dockOpen() ? dockApply() : openDock(); } }
+  };
+  el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+}
+dockDrag(dockFact); dockDrag(dockSplit);
+dockFact.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDock(); } });
+dockSplit.addEventListener("keydown", e => {
+  const h = dock.getBoundingClientRect().height, go = v => { e.preventDefault(); if (v < 160) return closeDock(); DK.h = Math.min(v, maxH()); lsSet("vis.dock.height", String(DK.h)); dockOpen() ? dockApply() : openDock(); };
+  if (e.key === "ArrowUp") go(h + 40); else if (e.key === "ArrowDown") go(h - 40);
+  else if (e.key === "Home") go(maxH()); else if (e.key === "End") { e.preventDefault(); closeDock(); }
+  else if (e.key === "Enter") { e.preventDefault(); toggleDock(); }
+});
+// A resize moves the panel with the window, without animating each step; it settles when the resizing stops.
+{ let t; addEventListener("resize", () => { dock.classList.add("dragging"); clearTimeout(t); t = setTimeout(() => { dock.classList.remove("dragging"); if (D && fleetOn()) { dockApply(); if (DK.open) renderDockBody(false); } }, 150); }); }
+
+/* ---------------- the encoder ---------------- */
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl+";
+const A0 = -225, A1 = 45;
+function openKnob(k, hint = {}) {
+  if (!k) return;
+  const lo = numOf(k, k.min), hi = numOf(k, k.max), log = lo > 0 && hi / lo >= 100, n = 60;
+  const toFrac = v => log ? Math.log(v / lo) / Math.log(hi / lo) : (v - lo) / (hi - lo);
+  const step = k.type === "duration" ? (hi - lo <= 100 ? .5 : 1) : 1;
+  const stAt = v => k.type === "level" ? 4 : v > 2000 ? 100 : v > 200 ? 10 : step; // the values the dial lands on near v
+  const fromFrac = f => {
+    const v = log ? lo * Math.pow(hi / lo, f) : lo + f * (hi - lo);
+    const st = stAt(v); return clamp(Math.round(v / st) * st, lo, hi);
+  };
+  // The special value ("no limit") isn't on the dial: vis doesn't know which end it belongs past. It is chosen by name, below the dial.
+  const SP = k.special, isSp = v => SP !== undefined && v === SP, fracOf = v => isSp(v) ? 0 : toFrac(v);
+  const cur = isSp(k.value) ? SP : numOf(k, k.value);
+  let val = cur, lease = "30 min", keep = "Dropped";
+  // before you change it: this knob's own recent history
+  const past = (D.history || []).filter(e => e.kind === "change" && e.fields?.knob === k.name).slice(-4).reverse()
+    .map(e => `<li><span>${ago(Date.parse(e.at))}</span><span class="hl"><b>${esc(show(k, e.fields.old))} → ${esc(show(k, e.fields.new))}</b> ${esc(who(e.fields.actor))}${e.fields.reason ? `: <i>${esc(e.fields.reason)}</i>` : ""}</span></li>`).join("");
+  const top = k.stack[0];
+  // The stack, spelled out: the layers in precedence order, the one in effect marked. This is where the row's mark is learned.
+  const stackRows = [...LAYERS].reverse().map(l => {
+    const e = k.stack.find(s => s.layer === l), win = top.layer === l;
+    const what = !e ? "" : `${show(k, e.value)}${k.unit ? " " + k.unit : ""}${e.by && l !== "default" ? ` · ${who(e.by).replace(`${l} `, "")}` : ""}`;
+    return `<div class="sr ${win ? "win" : e ? "has" : ""}"><i></i><span class="l">${l}</span><span>${esc(what) || "·"}${endsHTML(e)}</span></div>`;
+  }).join("");
+  const seg = (name, opts, on, label) => `<div class="seg" data-seg="${name}" role="radiogroup" aria-label="${label}">${opts.map(o => `<button data-o="${o}" role="radio" aria-checked="${o === on}" tabindex="${o === on ? 0 : -1}" class="${o === on ? "on" : ""}">${o}</button>`).join("")}<span class="ind"></span></div>`;
+  openSheet(`
+    <h3 id="sheetTitle" tabindex="-1">${esc(k.name)}</h3><div class="desc">${esc(k.about || "")}</div>
+    <div class="encoder" id="enc" tabindex="0" role="slider" aria-label="${esc(k.name)}">
+      <svg viewBox="0 0 264 264" id="encSvg"></svg>
+      <div class="readout"><div><div class="big num" id="encBig"></div><div class="unit">${k.unit ? esc(k.unit) : "&nbsp;"}</div><div class="was num" id="encWas"></div></div></div>
+    </div>
+    ${SP !== undefined ? `<button class="btn quiet" id="spBtn" style="margin:2px 0 10px">Set ${esc(SP)}</button>` : ""}
+    <div class="stack"><div class="h">WHO HOLDS IT</div>${stackRows}</div>
+    <div class="history"><div class="h">BEFORE YOU CHANGE IT</div>${past ? `<ul>${past}</ul>` : `<p style="margin:0;color:var(--ink-3);font-size:14px">No changes to it on this instance yet.</p>`}</div>
+    <div class="choose"><span>FOR</span>${seg("lease", ["30 min", "2 h", "No end"], lease, "For how long")}<span>ON RESTART</span>${seg("keep", ["Dropped", "Kept"], keep, "After a restart")}</div>
+    <input class="reason" id="reason" placeholder="why? (goes to the audit trail)">
+    <div class="plan" id="plan" aria-live="polite"></div>
+    <button class="btn ink apply" id="applyBtn" aria-keyshortcuts="${MOD === "⌘" ? "Meta" : "Control"}+Enter"></button>
+    ${top.layer === "pin" && top.by === D.user ? `<button class="btn quiet apply" id="unpinBtn" style="margin-top:6px">Remove pin</button>` : ""}`);
+
+  const svg = $("#encSvg"), C = 132, R1 = 112, R2 = 124;
+  const ang = f => (A0 + f * (A1 - A0)) * Math.PI / 180;
+  const tickEls = [];
+  for (let i = 0; i <= n; i++) {
+    const a = ang(i / n), long = i % 10 === 0, r1 = long ? R1 - 7 : R1;
+    tickEls.push(mk("line", { class: "t", x1: C + r1 * Math.cos(a), y1: C + r1 * Math.sin(a), x2: C + R2 * Math.cos(a), y2: C + R2 * Math.sin(a) }, svg));
+  }
+  if (!isSp(k.default)) tickEls[Math.round(toFrac(numOf(k, k.default)) * n)]?.classList.add("def");
+  mk("circle", { class: "cap", cx: C, cy: C, r: 92 }, svg);
+  const needle = mk("line", { class: "needle" }, svg);
+  let shown = fracOf(val), lastDetent = Math.round(shown * n);
+  const paint = f => {
+    const a = ang(f);
+    needle.setAttribute("x1", C + 72 * Math.cos(a)); needle.setAttribute("y1", C + 72 * Math.sin(a));
+    needle.setAttribute("x2", C + 89 * Math.cos(a)); needle.setAttribute("y2", C + 89 * Math.sin(a));
+    const on = Math.round(f * n); tickEls.forEach((t, i) => t.classList.toggle("on", i <= on));
+  };
+  const big = $("#encBig"), was = $("#encWas"), btn = $("#applyBtn"), enc = $("#enc"), box = $("#plan");
+  // The readout stays inside the dial's inner ring: a long value, such as a special one's name ("no limit"), gets a smaller size.
+  const FIT = 140, setBig = v => {
+    big.innerHTML = `<span>${esc(show(k, v))}</span>`; big.style.fontSize = "";
+    const sp = $("#spBtn"); if (sp) sp.disabled = isSp(v); // it is the value already
+    const w = big.firstChild.offsetWidth; if (w > FIT) big.style.fontSize = `${Math.floor(46 * FIT / w)}px`; // layout width: the sheet's opening transform doesn't change it
+  };
+  const wire = () => isSp(val) ? SP : k.type === "duration" ? `${val}ms` : k.type === "level" ? lvText(val) : val;
+  const forArg = () => lease === "No end" ? "" : lease === "2 h" ? "2h" : "30m";
+  const body = () => ({ set: { [k.name]: wire() }, for: forArg(), ...(keep === "Kept" ? { keep: true } : {}), reason: $("#reason").value.trim() });
+  let planSeq = 0, planned = null;
+  // The plan comes from the instance: Preview runs every check Apply would, and says what would be in effect.
+  const plan = async () => {
+    const seq = ++planSeq, changed = val !== cur;
+    setBig(val); enc.setAttribute("aria-valuetext", `${show(k, val)} ${k.unit || ""}`);
+    was.textContent = changed ? `was ${show(k, cur)}` : "";
+    btn.disabled = true;
+    if (!changed) { btn.textContent = "Turn the knob to change it"; box.innerHTML = ""; box.className = "plan"; return; }
+    btn.textContent = "Planning…";
+    let p;
+    try { p = await api("/api/preview", body()); } catch (e) {
+      if (seq !== planSeq) return;
+      box.className = "plan blocked"; box.innerHTML = `<div class="h">PLAN</div>${esc(e.message)}`; btn.textContent = "Can't apply"; return;
+    }
+    if (seq !== planSeq) return;
+    planned = p;
+    const e = p.effects[0], below = top.layer === "pin" ? k.stack[1] : top;
+    const over = below.layer === "rule" ? ` It overrides the rule holding it at ${show(k, below.value)}; the rule can't move ${k.name} while the pin lasts.` : "";
+    const then = lease === "No end" ? " Stays until someone removes the pin." : below.layer === "rule" ? ` Then the rule takes over again if its condition still holds, otherwise back to ${show(k, below.then)}.` : ` Then back to ${show(k, below.value)}.`;
+    // What a restart does to it: said when kept, or when this member has been dying or is short of memory.
+    const me = fleetOn() && D.fleet.members.find(m => m.self), risky = me?.restarts > 0 || (D.pressures || []).some(p => p.resource === "memory");
+    const restart = keep === "Kept" ? " If the process restarts, vis sets it back for what is left of the lease, unless it kills the process it is set back on within a minute."
+      : risky ? ` A restart drops it${me?.restarts ? `: this member restarted ${me.restarts > 1 ? `${me.restarts} times` : "once"} in the last 10 minutes` : ""}.` : "";
+    box.className = "plan" + (e.layer !== "pin" ? " blocked" : "");
+    box.innerHTML = e.layer !== "pin"
+      ? `<div class="h">PLAN</div>Won't take effect: <b>the ${e.layer} layer holds ${k.name} at ${esc(show(k, e.value))}</b>.`
+      : `<div class="h">PLAN</div><b>${esc(k.name)} ${esc(show(k, cur))} → ${esc(show(k, e.value))}${k.unit ? " " + esc(k.unit) : ""}</b> as your pin${lease === "No end" ? "" : ` for ${lease}`}.${over}${then}${restart}`;
+    const call = `set_knob ${JSON.stringify(body())}`;
+    box.insertAdjacentHTML("beforeend", `<div class="cmd"><code>${esc(call)}</code><button class="copy" data-call="${encodeURIComponent(call)}">copy</button></div>`);
+    btn.disabled = e.layer !== "pin"; btn.dataset.kbd = `${MOD}↵`;
+    btn.textContent = `Pin ${show(k, e.value)}${k.unit ? " " + k.unit : ""}${lease === "No end" ? "" : ` for ${lease}`}${keep === "Kept" ? ", kept" : ""}`;
+  };
+  let planT; const replan = () => { clearTimeout(planT); planT = setTimeout(plan, 120); setBig(val); was.textContent = val !== cur ? `was ${show(k, cur)}` : ""; };
+  box.addEventListener("click", e => { const b = e.target.closest("[data-call]"); if (b) copyText(decodeURIComponent(b.dataset.call), b); });
+  const settle = () => { const from = shown, to = fracOf(val); tween(320, t => { shown = from + (to - from) * t; paint(shown); }); };
+  paint(shown); plan();
+  const detent = i => { navigator.vibrate?.(4); const t = tickEls[i]; if (t) spring(t, { strokeWidth: ["3.5", "1.5"] }, { d: .25, bounce: 0 }); };
+  let drag = null;
+  enc.addEventListener("pointerdown", ev => {
+    enc.setPointerCapture(ev.pointerId); enc.classList.add("turning");
+    const r = enc.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    drag = { cx, cy, f: shown, a: Math.atan2(ev.clientY - cy, ev.clientX - cx), y: ev.clientY, ring: Math.hypot(ev.clientX - cx, ev.clientY - cy) > r.width * 0.3 };
+  });
+  enc.addEventListener("pointermove", ev => {
+    if (!drag) return;
+    const a = Math.atan2(ev.clientY - drag.cy, ev.clientX - drag.cx);
+    let da = a - drag.a; drag.a = a;
+    if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI;
+    drag.acc = (drag.acc || 0) + da;
+    shown = clamp(drag.f + (drag.ring ? drag.acc / ((A1 - A0) * Math.PI / 180) : (drag.y - ev.clientY) / 260), 0, 1);
+    paint(shown);
+    const v = fromFrac(shown); if (v !== val) { val = v; replan(); }
+    const d = Math.round(shown * n); if (d !== lastDetent) { lastDetent = d; detent(d); }
+  });
+  const end = () => { if (!drag) return; drag = null; enc.classList.remove("turning"); settle(); };
+  enc.addEventListener("pointerup", end); enc.addEventListener("pointercancel", end);
+  enc.addEventListener("keydown", ev => {
+    const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 10, PageDown: -10 }[ev.key] * (ev.shiftKey && ev.key.startsWith("Arrow") ? 10 : 1);
+    let f;
+    if (ev.key === "Home") f = 0; else if (ev.key === "End") f = 1;
+    else if (d && k.type === "level") f = toFrac(clamp(val + Math.sign(d) * 4, lo, hi)); // one level per press
+    else if (d) f = clamp(fracOf(val) + d / n, 0, 1); else return;
+    // On a log dial a tick near its low end is less than one value (cache_size from 1: ×1.17 rounds back to 1), and
+    // the arrows went nowhere: a step that lands where it started moves to the next value instead.
+    const was = val; val = fromFrac(f);
+    if (val === was && d && k.type !== "level") val = clamp(was + Math.sign(d) * stAt(was), lo, hi);
+    ev.preventDefault(); replan(); settle(); detent(Math.round(fracOf(val) * n));
+  });
+  document.querySelectorAll("#sheetBody .seg").forEach(sg => {
+    const ind = sg.querySelector(".ind"), opts = [...sg.querySelectorAll("button")];
+    const place = () => { const on = sg.querySelector("button.on"); ind.style.width = `${on.offsetWidth}px`; ind.style.transform = `translateX(${on.offsetLeft}px)`; };
+    requestAnimationFrame(place);
+    sg.addEventListener("keydown", ev => { const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[ev.key]; if (!d) return; ev.preventDefault(); const i = (opts.findIndex(o => o.classList.contains("on")) + d + opts.length) % opts.length; opts[i].click(); opts[i].focus(); });
+    opts.forEach(b => b.onclick = () => { opts.forEach(o => { o.classList.toggle("on", o === b); o.setAttribute("aria-checked", String(o === b)); o.tabIndex = o === b ? 0 : -1; }); place(); if (sg.dataset.seg === "keep") keep = b.dataset.o; else lease = b.dataset.o; plan(); });
+  });
+  $("#spBtn")?.addEventListener("click", () => { val = SP; replan(); settle(); });
+  if (hint.reason) $("#reason").value = hint.reason; // from the facts: why you're here
+  $("#reason").addEventListener("input", replan);
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      const rec = await api("/api/apply", body());
+      const e = rec.effects[0];
+      closeSheet(); await refresh();
+      toast(`${k.name} is now ${show(k, e.value)}.`, "Undo", async () => {
+        try { rec.lease ? await api("/api/revert", { lease: rec.lease, reason: "undone from the UI" }) : await api("/api/clear", { knob: k.name, reason: "undone from the UI" }); refresh(); }
+        catch (err) { toast(err.message); }
+      });
+    } catch (err) { btn.disabled = false; box.className = "plan blocked"; box.innerHTML = `<div class="h">PLAN</div>${esc(err.message)}`; }
+  };
+  const un = $("#unpinBtn");
+  if (un) un.onclick = async () => {
+    try { const e = await api("/api/clear", { knob: k.name, reason: $("#reason").value.trim() || "pin removed from the UI" }); closeSheet(); await refresh(); toast(`Pin removed. ${k.name} is ${show(k, e.value)}.`); }
+    catch (err) { toast(err.message); }
+  };
+}
+
+/* ---------------- toast ---------------- */
+let toastT;
+function toast(msg, action, fn) {
+  const t = $("#toast"); t.innerHTML = esc(msg) + (action ? `<button>${action}</button>` : "");
+  const hide = () => spring(t, { transform: ["translate(-50%, 0%)", "translate(-50%, 200%)"], opacity: [1, 0] }, { d: .3, bounce: 0 });
+  if (action) t.querySelector("button").onclick = () => { fn(); hide(); };
+  spring(t, { transform: ["translate(-50%, 200%)", "translate(-50%, 0%)"], opacity: [0, 1] }, { d: .35, bounce: .15 });
+  clearTimeout(toastT); toastT = setTimeout(hide, 5000);
+}
+
+/* ---------------- freeze ---------------- */
+function renderFreeze() {
+  const f = D.freeze;
+  document.body.classList.toggle("frozen", f.frozen);
+  $("#freezeBtn").setAttribute("aria-pressed", String(f.frozen));
+  if (!f.frozen) { $("#freezeLbl").textContent = "Freeze"; return; }
+  const since = Date.parse(f.since), mins = Math.floor((Date.now() - since) / 60e3);
+  $("#freezeLbl").textContent = mins < 1 ? "Frozen" : `Frozen ${mins} min`;
+  const reason = [...(D.history || [])].reverse().find(e => e.kind === "freeze" && e.fields?.reason)?.fields.reason || f.reason;
+  $("#freezeWho").textContent = `by ${who(f.by)} · since ${clock(since)}${reason ? ` · “${reason}”` : ""}`;
+}
+async function setFrozen(on, reason = "") {
+  try {
+    await api(on ? "/api/freeze" : "/api/unfreeze", { reason });
+    await refresh();
+    toast(on ? "Frozen. Every knob holds its current value." : "Unfrozen. Leases pick up where they stopped.");
+    if (on && matchMedia("(pointer: fine)").matches) $("#freezeWhy").focus({ preventScroll: true });
+  } catch (e) { toast(e.message); }
+}
+$("#freezeBtn").onclick = () => setFrozen(!D.freeze.frozen);
+$("#unfreezeBtn").onclick = () => setFrozen(false, $("#freezeWhy").value.trim());
+$("#freezeWhy").addEventListener("keydown", async e => {
+  if (e.key === "Escape") { e.preventDefault(); e.target.blur(); $("#freezeBtn").focus(); }
+  if (e.key === "Enter") { e.preventDefault(); const r = e.target.value.trim(); if (r) { await api("/api/freeze", { reason: r }).catch(() => {}); e.target.value = ""; refresh(); toast("Reason added to the freeze."); } e.target.blur(); $("#freezeBtn").focus(); }
+});
+
+/* ---------------- keyboard ---------------- */
+addEventListener("keydown", e => { if (e.key === "Tab" || e.key.length === 1 || e.key.startsWith("Arrow")) document.body.classList.add("keys-on"); }, true);
+addEventListener("pointerdown", () => document.body.classList.remove("keys-on"), true);
+const KEYS = [
+  ["Anywhere", [["?", "Show these keys"], ["j k", "Next / previous story"], ["1 – 9", "Open a knob"], ["t", "Go to the timeline"], ["r", "The routes"], ["i", "The fleet, or this instance alone"], ["f", "Freeze automated changes"], ["Shift F", "Unfreeze"], ["Esc", "Close"]]],
+  ["On a story", [["↵", "Its action (Review)"], ["c", "Copy the story as text"], ["Shift C", "Copy today, oldest first"]]],
+  ["On the timeline", [["← →", "Move by 10 s (Shift: 100 s)"], ["[ ]", "Previous / next event"], ["Home End", "Oldest / now"], ["↵", "Open the story at that moment"]]],
+  ["On a knob", [["← →", "Turn one step (Shift: ten)"], ["Home End", "Minimum / maximum"], ["Tab", "For how long; arrows choose"], [`${MOD}↵`, "Apply the plan"]]],
+];
+function showKeys() {
+  openSheet(`<h3 id="sheetTitle" tabindex="-1">Keyboard</h3><div class="desc">Everything works without a pointer.</div>
+    <div class="keys">${KEYS.map(([h, rows]) => `<section><h4>${h.toUpperCase()}</h4><dl>${rows.map(([k, d]) => `<dt>${k.split(" ").map(x => `<span>${x}</span>`).join("")}</dt><dd>${d}</dd>`).join("")}</dl></section>`).join("")}</div>`);
+}
+$("#keysBtn").onclick = showKeys;
+const sheetOpen = () => sheet.classList.contains("on");
+addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && sheetOpen()) { const b = $("#applyBtn"); if (b && !b.disabled) { e.preventDefault(); b.click(); } return; }
+  if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
+  if (e.target.closest?.("input, textarea, [contenteditable]")) return;
+  if (sheetOpen() || !D) return;
+  if (dockOpen() && !["?", "i", "Escape", "Tab"].includes(e.key)) return; // the page under the open dock takes no input
+  const story = document.activeElement?.closest?.(".story")?._s;
+  const knob = knobOrder[+e.key - 1];
+  const act = fn => { e.preventDefault(); fn(); };
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key, shift = e.shiftKey;
+  if (e.key === "?") act(showKeys);
+  else if (e.key === "j" || (e.key === "ArrowDown" && story)) act(() => moveStory(1));
+  else if (e.key === "k" || (e.key === "ArrowUp" && story)) act(() => moveStory(-1));
+  else if (knob) act(() => { const r = $(`.row[data-k="${knob.name}"]`); r?.focus(); r?.click(); });
+  else if (e.key === "t") act(() => { stripBox.focus(); kbBin ??= B - 1; scrubBin(kbBin); });
+  else if (e.key === "r" && !$("#routesFrame").hidden) act(() => $("#routes .rt")?.focus());
+  else if (e.key === "i") act(() => { if (fleetOn()) toggleDock(); else { $("#fleetBtn").focus(); $("#fleetBtn").click(); } });
+  else if (key === "f" && shift) act(() => setFrozen(false));
+  else if (key === "f") act(() => D.freeze.frozen ? $("#freezeWhy").focus() : setFrozen(true));
+  else if (key === "c" && shift) act(() => $(".copyall")?.click());
+  else if (story && e.key === "Enter" && e.target.classList.contains("story")) act(() => story.actions?.[0]?.fn());
+  else if (story && e.key === "c") act(() => storyEl(story)?.querySelector(".copy").click());
+});
+
+/* ---------------- main loop ---------------- */
+document.querySelectorAll(".frame").forEach(f => ["tl", "tr", "bl", "br"].forEach(c => { const e = document.createElement("span"); e.className = "c " + c; e.textContent = "+"; f.appendChild(e); }));
+document.body.classList.add("still"); // the first paint draws the page as it is: nothing slides or fades in
+function render() {
+  if (!render.done) { render.done = true; requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove("still"))); }
+  document.title = `${D.service} · vis`; $("#svcName").textContent = D.service;
+  const why = routeWhy(route());
+  $("#stripLabel").textContent = route() ? `P99 · ${route().route}${why ? ` · ${why}` : ""}` : "P99";
+  const st = $("#status"); st.classList.remove("stale");
+  st.firstChild.textContent = `${FIX ? `preview of ${FIX}` : mode} · build ${String(D.build).slice(0, 7)} · as ${D.user}`;
+  headline(); renderScope(); renderFig(); renderMem(); renderRoutes(); renderStories(); drawStrip(); renderKnobs(); renderRules(); renderInstance(); renderFreeze();
+  renderDock();
+  if (scrubX != null) scrub({ clientX: scrubX }); else if (kbBin != null) scrubBin(kbBin);
+}
+if (FIX) { // ?sheet=fleet (or =instance) opens that sheet once the fixture is drawn, for a link to it
+  const dq = Q.get("dock"); if (dq) DK.detent = dq === "full" ? 2 : 1;
+  poll().then(() => { if ((Q.get("sheet") === "fleet" || (dq && dq !== "peek")) && fleetOn()) { openDock(); if (Q.get("member")) showMember(Q.get("member")); } else if (Q.get("sheet") === "instance") showInstance(); });
+  polling = setInterval(poll, 2000);
+} else connect();
+setInterval(() => { if (lastOK && Date.now() - lastOK > 8000) { $("#status").classList.add("stale"); } }, 2000);
+</script>
+</body>
+</html>
