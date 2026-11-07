@@ -1256,6 +1256,14 @@ async function copyText(text, btn) {
 // A title from its parts: who acted, the rule, the knob and its values stand a
 // little apart from the words between them. Without parts, the plain title.
 const titleHTML = s => s.parts?.length ? s.parts.map(p => p.kind ? `<span class="t-${esc(p.kind)}">${esc(p.text)}</span>` : `<span class="t-w">${esc(p.text)}</span>`).join("") : esc(s.title);
+// What "more" adds: the body without the why it starts with, plain or quoted, since the why is shown
+// above it already. The body keeps it for copying, where the why isn't.
+function storyDetail(s) {
+  const b = s.body || "";
+  if (!s.why) return b;
+  for (const lead of [s.why, `“${s.why}”`]) if (b.startsWith(lead)) return b.slice(lead.length).trim();
+  return b;
+}
 function renderStories() {
   const stories = S.stories = buildStories();
   const box = $("#stories"), hadFocus = box.contains(document.activeElement) && document.activeElement.closest(".story")?._s?.id;
@@ -1267,7 +1275,7 @@ function renderStories() {
     const el = document.createElement("article");
     el.className = "story" + (s.alert ? " alert" : "");
     el.innerHTML = `<div class="when"><span class="dot"></span><span class="wt"><span class="num">${clock(s.t)}</span>${s.src ? ` <span>· ${esc(s.src)}</span>` : ""}</span><button class="copy" tabindex="-1" aria-label="Copy this story as text (c)">copy</button></div>
-      <h3>${titleHTML(s)}</h3>${s.why ? `<p class="swhy">${keep(s.why)}</p>` : ""}${fxHTML(s)}${s.body && s.body !== s.why && s.body !== `“${s.why}”` ? `<p class="detail">${keep(s.body)}</p><button class="more" tabindex="-1">more</button>` : ""}${s.actions ? `<div class="actions">${s.actions.map((a, i) => `<button class="btn ${i ? "quiet" : "ink"}" data-a="${i}">${a.label}<span class="kbd">${i ? "x" : "↵"}</span></button>`).join("")}</div>` : ""}`;
+      <h3>${titleHTML(s)}</h3>${s.why ? `<p class="swhy">${keep(s.why)}</p>` : ""}${fxHTML(s)}${storyDetail(s) ? `<p class="detail">${keep(storyDetail(s))}</p><button class="more" tabindex="-1">more</button>` : ""}${s.actions ? `<div class="actions">${s.actions.map((a, i) => `<button class="btn ${i ? "quiet" : "ink"}" data-a="${i}">${a.label}<span class="kbd">${i ? "x" : "↵"}</span></button>`).join("")}</div>` : ""}`;
     s.actions?.forEach((a, i) => el.querySelector(`[data-a="${i}"]`).onclick = a.fn);
     el.querySelector(".copy").onclick = e => copyText(storyText(s), e.currentTarget);
     const mo = el.querySelector(".more"); if (mo) mo.onclick = () => { el.classList.toggle("open"); mo.textContent = el.classList.contains("open") ? "less" : "more"; };
