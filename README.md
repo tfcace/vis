@@ -12,6 +12,38 @@ Ollama adopts vis: two lines, a few comments, tuned while it runs, kept in its o
 go get github.com/tfcace/vis
 ```
 
+## Screenshots
+
+An image service under simulated load, declared like the [Tune](#tune) example below with `p99=500ms` on `GET /images/{id}`: a minute into a slowdown, and after it.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/breach-dark.png">
+  <img alt="vis's dashboard during a breach: the headline says GET /images/{id} is over its SLO, the p99 chart spikes over the 500 ms line after an hour under it, a rule has stepped jpeg_quality from 95 to 90 under a lease, and the Today column lists the rule's step and a person's DEBUG pin on logging." src="docs/images/breach-light.png">
+</picture>
+
+A breach. GET /images/{id} is over its 500 ms objective, and quality_backoff has stepped jpeg_quality from 95 to 90 under a 10 minute lease. It keeps stepping until p99 is back under 400 ms.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/routes-dark.png">
+  <img alt="The routes table: each route with a sparkline of its p99 over the last hour, its p99 now and its SLO. GET /images/{id} at 386 ms against 500 ms; meta, search, upload, healthz and unmatched requests without one." src="docs/images/routes-light.png" width="710">
+</picture>
+
+Every route's p99 over the last hour, and its objective if it has one. Requests no route matched get a row too.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/knob-dark.png">
+  <img alt="The logging knob turned from INFO to DEBUG on the dashboard: who holds it, a 30 minute lease, dropped on restart, the reason, and the plan before applying it, with the same change as an MCP set_knob call." src="docs/images/knob-light.png" width="380">
+</picture>
+
+Turning logging up to DEBUG. Before anything changes, the plan says what will hold and for how long, and shows the same change as an agent would send it.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/today-dark.png">
+  <img alt="Today: rule quality_backoff moved jpeg_quality from 95 to 80, its first step measured at p99 705 to 638 ms after 30 s; you pinned logging to DEBUG with a reason, measured at no change in p99." src="docs/images/today-light.png" width="430">
+</picture>
+
+Today: every change, with what it did. The rule's first step took p99 from 705 to 638 ms. The DEBUG pin left it where it was.
+
 ## See
 
 ```go
@@ -87,6 +119,9 @@ var CacheSize vis.Int // Memory for cached images.
 // vis:rule name=quality_backoff when="slo.p99 > 400ms" for=30s do=step(-5) cooldown=30s lease=10m
 var JPEGQuality vis.Int // JPEG quality of resized images.
 
+// vis:knob pull=agent
+var Logging vis.LogLevel // What the service logs.
+
 // vis:signal unit=images/s
 var OriginFetches vis.Gauge // Images fetched from origin servers per second.
 ```
@@ -94,6 +129,7 @@ var OriginFetches vis.Gauge // Images fetched from origin servers per second.
 ```go
 q := JPEGQuality.From(r.Context())
 CacheSize.Bind(func(mb int) { cache.Resize(mb * 1_000_000) })
+logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: Logging}))
 ```
 
 | every change | |
